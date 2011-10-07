@@ -140,7 +140,6 @@ class Catalog(object):
     headers, response = self.http.request(url, obj.save_method, message, headers)
     self._cache.clear()
     if headers.status < 200 or headers.status > 299: raise UploadError(response) 
-    return response
 
   def get_store(self, name, workspace=None):
       #stores = [s for s in self.get_stores(workspace) if s.name == name]
@@ -193,8 +192,34 @@ class Catalog(object):
               stores.extend(a)
           return stores
 
-  def create_postgres_layer(self, workspace, store, name, nativeName, title, 
-                            srs, attributes):
+  def create_native_layer(self, workspace, store, name,
+          native_name, title, srs, attributes):
+    """
+    Physically create a layer in one of GeoServer's datastores.
+    For example, this will actually create a table in a Postgis store.
+
+    Parameters include:
+    workspace - the Workspace object or name of the workspace of the store to
+       use
+    store - the Datastore object or name of the store to use
+    name - the published name of the store
+    native_name - the name used in the native storage format (such as a
+        filename or database table name)
+    title - the title for the created featuretype configuration
+    srs - the SRID for the SRS to use (like "EPSG:4326" for lon/lat)
+    attributes - a dict specifying the names and types of the attributes for
+       the new table.  Types should be specified using Java class names:
+
+       * boolean = java.lang.Boolean
+       * byte = java.lang.Byte
+       * timestamp = java.util.Date
+       * double = java.lang.Double
+       * float = java.lang.Float
+       * integer = java.lang.Integer
+       * long = java.lang.Long
+       * short = java.lang.Short
+       * string = java.lang.String
+    """
     if isinstance(workspace, basestring):
         ws = self.get_workspace(workspace)
     elif ws is None:
@@ -220,16 +245,16 @@ class Catalog(object):
         attributes_block += "</attributes>"
         
         if has_geom == False:
-            msg = "You must specify at least one Geometry"
+            msg = "Geometryless layers are not currently supported"
             raise InvalidAttributesError(msg)
 
     xml = ("<featureType>"
             "<name>{name}</name>"
-            "<nativeName>{nativeName}</nativeName>"
+            "<nativeName>{native_name}</nativeName>"
             "<title>title</title>"
             "<srs>{srs}</srs>"
             "{attributes}"
-            "</featureType>").format(name=name, nativeName=nativeName, 
+            "</featureType>").format(name=name, native_name=native_name, 
                                         title=title, srs=srs,
                                         attributes=attributes_block)
     headers = { "Content-Type": "application/xml" }
