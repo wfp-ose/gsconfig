@@ -222,7 +222,7 @@ class Catalog(object):
     """
     if isinstance(workspace, basestring):
         ws = self.get_workspace(workspace)
-    elif ws is None:
+    elif workspace is None:
         ws = self.get_default_workspace()
     ds = self.get_store(store, ws)
     existing_layer = self.get_resource(name, ds, ws) 
@@ -251,15 +251,14 @@ class Catalog(object):
     xml = ("<featureType>"
             "<name>{name}</name>"
             "<nativeName>{native_name}</nativeName>"
-            "<title>title</title>"
+            "<title>{title}</title>"
             "<srs>{srs}</srs>"
             "{attributes}"
             "</featureType>").format(name=name, native_name=native_name, 
                                         title=title, srs=srs,
                                         attributes=attributes_block)
     headers = { "Content-Type": "application/xml" }
-    url = '%s/workspaces/%s/datastores/%s/featuretypes' % (self.service_url, workspace, store)
-
+    url = '%s/workspaces/%s/datastores/%s/featuretypes' % (self.service_url, ws.name, store)
     headers, response = self.http.request(url, "POST", xml, headers)
     assert 200 <= headers.status < 300, "Tried to create PostGIS Layer but got " + str(headers.status) + ": " + response
     self._cache.clear()
