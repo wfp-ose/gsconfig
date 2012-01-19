@@ -96,6 +96,7 @@ class Catalog(object):
         raise FailedRequestError("Tried to make a DELETE request to %s but got a %d status code: \n%s" % (url, response.status, content))
 
   def get_xml(self, url):
+    url = url.replace(' ','+')
     logger.debug("GET %s", url)
     cached_response = self._cache.get(url)
 
@@ -207,8 +208,11 @@ class Catalog(object):
         filename or database table name)
     title - the title for the created featuretype configuration
     srs - the SRID for the SRS to use (like "EPSG:4326" for lon/lat)
-    attributes - a dict specifying the names and types of the attributes for
-       the new table.  Types should be specified using Java class names:
+    attributes - list of sequences specifying the names and types of the
+       attributes for the new table as a tuple. An optional third tuple value
+       can be a dict of attribute options.
+       
+       Types should be specified using Java class names:
 
        * boolean = java.lang.Boolean
        * byte = java.lang.Byte
@@ -219,6 +223,11 @@ class Catalog(object):
        * long = java.lang.Long
        * short = java.lang.Short
        * string = java.lang.String
+       
+       Currently supported attribute options are:
+       
+       * nillable = True, False
+       
     """
     if isinstance(workspace, basestring):
         ws = self.get_workspace(workspace)
@@ -229,24 +238,37 @@ class Catalog(object):
     if existing_layer is not None:
         msg = "There is already a layer named %s in %s" % (name, workspace)
         raise ConflictingDataError(msg)
-    if not isinstance(attributes, dict) or len(attributes) < 1:
+    if len(attributes) < 1:
         msg = "The specified attributes are invalid"
         raise InvalidAttributesError(msg)
-    else:
-        has_geom = False
-        attributes_block = "<attributes>"
-        for k, v in attributes.items():
-            if v.find("com.vividsolutions.jts.geom") >= 0:
-                has_geom = True
-            attributes_block += ("<attribute>"
-                "<name>{name}</name>"
-                "<binding>{binding}</binding>"
-                "</attribute>").format(name=k, binding=v)
-        attributes_block += "</attributes>"
+
+    has_geom = False
+    attributes_block = "<attributes>"
+    empty_opts = {}
+    for spec in attributes:
+        if len(spec) == 2:
+            att_name, binding = spec
+            opts = empty_opts
+        elif len(spec) == 3:
+            att_name, binding, opts = spec
+        else:
+            raise InvalidAttributesError("expected tuple of (name,binding,dict?)")
+
+        nillable = opts.get("nillable",False)
         
-        if has_geom == False:
-            msg = "Geometryless layers are not currently supported"
-            raise InvalidAttributesError(msg)
+        if binding.find("com.vividsolutions.jts.geom") >= 0:
+            has_geom = True
+            
+        attributes_block += ("<attribute>"
+            "<name>{name}</name>"
+            "<binding>{binding}</binding>"
+            "<nillable>{nillable}</nillable>"
+            "</attribute>").format(name=att_name, binding=binding, nillable=nillable)
+    attributes_block += "</attributes>"
+
+    if has_geom == False:
+        msg = "Geometryless layers are not currently supported"
+        raise InvalidAttributesError(msg)
 
     xml = ("<featureType>"
             "<name>{name}</name>"
