@@ -259,20 +259,24 @@ class Catalog(object):
       "Content-type": "application/zip",
       "Accept": "application/xml"
     }
+    own_upload_bundle = False
     if  isinstance(data,dict):
         logger.debug('Data is NOT a zipfile')
         archive = prepare_upload_bundle(name, data)
+        own_upload_bundle = True
     else:
         logger.debug('Data is a zipfile')
         archive = data
     message = open(archive)
     try:
-      headers, response = self.http.request(ds_url, "PUT", message, headers)
-      self._cache.clear()
-      if headers.status != 201:
-          raise UploadError(response)
+        with message as open(archive):
+            headers, response = self.http.request(ds_url, "PUT", message, headers)
+            self._cache.clear()
+            if headers.status != 201:
+                raise UploadError(response)
     finally:
-      unlink(archive)
+        if own_upload_bundle:
+            unlink(archive)
 
   def create_coveragestore(self, name, data, workspace=None, overwrite=False):
     if not overwrite:
