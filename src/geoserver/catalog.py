@@ -42,11 +42,12 @@ class Catalog(object):
   - Namespaces, which provide unique identifiers for resources
   """
 
-  def __init__(self, url, username="admin", password="geoserver"):
+  def __init__(self, url, username="admin", password="geoserver",ssl_certificate_validation=True):
     self.service_url = url
+    self.ssl_certificate_validation = ssl_certificate_validation
     if self.service_url.endswith("/"):
         self.service_url = self.service_url.strip("/")
-    self.http = httplib2.Http()
+    self.http = httplib2.Http(disable_ssl_certificate_validation=not ssl_certificate_validation)
     self.username = username
     self.password = password
     self.http.add_credentials(self.username, self.password)
@@ -104,6 +105,11 @@ class Catalog(object):
             return XML(content)
         else:
             raise FailedRequestError("Tried to make a GET request to %s but got a %d status code: \n%s" % (url, response.status, content))
+
+  def reload(self):
+    url = self.service_url + '/reload'
+    response = self.http.request(url, "POST")
+    return response
 
   def save(self, object):
     """
@@ -381,24 +387,35 @@ class Catalog(object):
     description = self.get_xml("%s/styles.xml" % self.service_url)
     return [Style(self,s) for s in description.findall("style")]
 
-  def create_style(self, name, data, overwrite = False):
+  def create_style(self, name, data, overwrite = False, reload = False):
     if overwrite == False and self.get_style(name) is not None:
       raise ConflictingDataError("There is already a style named %s" % name)
 
     headers = {
-      "Content-type": "application/vnd.ogc.sld+xml",
-      "Accept": "application/xml"
+      'Content-type': 'application/vnd.ogc.sld+xml',
+      'Accept': 'application/xml'
     }
 
     if overwrite:
       style_url = "%s/styles/%s.sld" % (self.service_url, name)
       headers, response = self.http.request(style_url, "PUT", data, headers)
+      #TODO: If PUT fails, should we try POST?
+      if headers.status == 404:
+        print headers
+        headers = {
+            'Content-type': 'application/vnd.ogc.sld+xml',
+            'Accept': 'application/xml'
+        }
+        style_url = "%s/styles?name=%s" % (self.service_url, name)
+        headers, response = self.http.request(style_url, "POST", data, headers)
     else:
       style_url = "%s/styles?name=%s" % (self.service_url, name)
       headers, response = self.http.request(style_url, "POST", data, headers)
 
-    self._cache.clear()
     if headers.status < 200 or headers.status > 299: raise UploadError(response)
+    if reload == True:
+      print self.reload()
+    self._cache.clear()
 
   def get_namespace(self, id=None, prefix=None, uri=None):
     raise NotImplementedError()
