@@ -259,12 +259,23 @@ class Catalog(object):
       "Content-type": "application/zip",
       "Accept": "application/xml"
     }
-    if  isinstance(data,dict):
+    if isinstance(data,dict):
         logger.debug('Data is NOT a zipfile')
         archive = prepare_upload_bundle(name, data)
     else:
         logger.debug('Data is a zipfile')
         archive = data
+
+    try:
+        with open(archive) as body:
+            headers, response = self.http.request(
+                ds_url, "PUT", message, headers)
+            self._cache.clear()
+            if headers.status != 201:
+                raise UploadError(response)
+    finally:
+        unlink(archive)
+
     message = open(archive)
     try:
       headers, response = self.http.request(ds_url, "PUT", message, headers)
