@@ -304,6 +304,10 @@ class Catalog(object):
       return UnsavedCoverageStore(self, name, workspace)
 
   def add_data_to_store(self, store, name, data, overwrite = False, charset = None):
+      extension = 'shp'
+      if isinstance(data, basestring) and data.endswith('.csv'):
+          data = dict(csv=data)
+          extension = 'csv'
       if isinstance(data, dict):
           bundle = prepare_upload_bundle(name, data)
       else:
@@ -322,8 +326,8 @@ class Catalog(object):
 
       message = open(bundle)
       headers = { 'Content-Type': 'application/zip', 'Accept': 'application/xml' }
-      url = "%s/workspaces/%s/datastores/%s/file.shp%s" % (
-              self.service_url, store.workspace.name, store.name, params)
+      url = "%s/workspaces/%s/datastores/%s/file.%s%s" % (
+              self.service_url, store.workspace.name, store.name, extension, params)
 
       try:
           headers, response = self.http.request(url, "PUT", message, headers)
@@ -345,19 +349,26 @@ class Catalog(object):
             # we don't really expect that every layer name will be taken
             pass
 
+    extension = 'shp'
+    # normalize data
+    if isinstance(data, basestring) and data.endswith('.csv'):
+        data = dict(csv=data)
+        extension = 'csv'
+
     if workspace is None:
       workspace = self.get_default_workspace()
     if charset:
-        ds_url = "%s/workspaces/%s/datastores/%s/file.shp?charset=%s" % (self.service_url, workspace.name, name, charset)
+        ds_url = "%s/workspaces/%s/datastores/%s/file.%s?charset=%s" % (self.service_url, workspace.name, name, extension, charset)
     else:
-        ds_url = "%s/workspaces/%s/datastores/%s/file.shp" % (self.service_url, workspace.name, name)
+        ds_url = "%s/workspaces/%s/datastores/%s/file.%s" % (self.service_url, workspace.name, name, extension)
 
     # PUT /workspaces/<ws>/datastores/<ds>/file.shp
     headers = {
       "Content-type": "application/zip",
       "Accept": "application/xml"
     }
-    if  isinstance(data,dict):
+
+    if isinstance(data, dict):
         logger.debug('Data is NOT a zipfile')
         archive = prepare_upload_bundle(name, data)
     else:
