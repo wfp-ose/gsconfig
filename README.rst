@@ -37,7 +37,7 @@ Sample Layer Creation Code
 Running Tests
 =============
 
-Since the entire purpose of this module is to interact with GeoServer, the test suite is mostly composed of `integration tests <http://en.wikipedia.org/wiki/Integration_testing>`.  
+Since the entire purpose of this module is to interact with GeoServer, the test suite is mostly composed of `integration tests <http://en.wikipedia.org/wiki/Integration_testing>`_.  
 These tests necessarily rely on a running copy of GeoServer, and expect that this GeoServer instance will be using the default data directory that is included with GeoServer.
 This data is also included in the GeoServer source repository as ``/data/release/``.
 In addition, it is expected that there will be a postgres database available at ``postgres:postgres@localhost:5432/db``.
