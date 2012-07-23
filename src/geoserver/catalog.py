@@ -29,6 +29,21 @@ class AmbiguousRequestError(Exception):
 class FailedRequestError(Exception):
     pass
 
+def _name(named):
+    """Get the name out of an object.  This varies based on the type of the input:
+       * the "name" of a string is itself
+       * the "name" of None is itself
+       * the "name" of an object with a property named name is that property -
+         as long as it's a string
+       * otherwise, we raise a ValueError
+    """
+    if isinstance(named, basestring) or named is None:
+        return named
+    elif hasattr(named, 'name') and isinstance(named.name, basestring):
+        return named.name
+    else:
+        raise ValueError("Can't interpret %s as a name or a configuration object" % named)
+
 class Catalog(object):
     """
     The GeoServer catalog represents all of the information in the GeoServer
@@ -165,6 +180,8 @@ class Catalog(object):
                 raise FailedRequestError("No store found named: " + name)
             return store
         else: # workspace is not None
+            if isinstance(workspace, basestring):
+                workspace = self.get_workspace(workspace)
             logger.debug("datastore url is [%s]", workspace.datastore_url )
             ds_list = self.get_xml(workspace.datastore_url)
             cs_list = self.get_xml(workspace.coveragestore_url)
@@ -183,6 +200,8 @@ class Catalog(object):
 
     def get_stores(self, workspace=None):
         if workspace is not None:
+            if isinstance(workspace, basestring):
+                workspace = self.get_workspace(workspace)
             ds_list = self.get_xml(workspace.datastore_url)
             cs_list = self.get_xml(workspace.coveragestore_url)
             datastores = [datastore_from_index(self, workspace, n) for n in ds_list.findall("dataStore")]
@@ -195,7 +214,7 @@ class Catalog(object):
                 stores.extend(a)
             return stores
 
-    def create_datastore(self, name, workspace = None):
+    def create_datastore(self, name, workspace=None):
         if isinstance(workspace, basestring):
             workspace = self.get_workspace(workspace)
         elif workspace is None:
@@ -207,11 +226,22 @@ class Catalog(object):
         Hm we already named the method that creates a coverage *resource*
         create_coveragestore... time for an API break?
         """
-        if workspace is None:
+        if isinstance(workspace, basestring):
+            workspace = self.get_workspace(workspace)
+        elif workspace is None:
             workspace = self.get_default_workspace()
         return UnsavedCoverageStore(self, name, workspace)
 
-    def add_data_to_store(self, store, name, data, overwrite = False, charset = None):
+    def add_data_to_store(self, store, name, data, workspace=None, overwrite = False, charset = None):
+        if isinstance(store, basestring):
+            store = self.get_store(store, workspace=workspace)
+        if workspace is not None:
+            workspace = _name(workspace)
+            assert store.workspace.name == workspace, "Specified store (%s) is not in specified workspace (%s)!" % (store, workspace)
+        else:
+            workspace = store.workspace.name
+        store = store.name
+
         if isinstance(data, dict):
             bundle = prepare_upload_bundle(name, data)
         else:
@@ -231,7 +261,7 @@ class Catalog(object):
         message = open(bundle)
         headers = { 'Content-Type': 'application/zip', 'Accept': 'application/xml' }
         url = "%s/workspaces/%s/datastores/%s/file.shp%s" % (
-            self.service_url, store.workspace.name, store.name, params)
+            self.service_url, workspace, store, params)
 
         try:
             headers, response = self.http.request(url, "PUT", message, headers)
@@ -255,10 +285,11 @@ class Catalog(object):
 
         if workspace is None:
             workspace = self.get_default_workspace()
+        workspace = _name(workspace)
         if charset:
-            ds_url = "%s/workspaces/%s/datastores/%s/file.shp?charset=%s" % (self.service_url, workspace.name, name, charset)
+            ds_url = "%s/workspaces/%s/datastores/%s/file.shp?charset=%s" % (self.service_url, workspace, name, charset)
         else:
-            ds_url = "%s/workspaces/%s/datastores/%s/file.shp" % (self.service_url, workspace.name, name)
+            ds_url = "%s/workspaces/%s/datastores/%s/file.shp" % (self.service_url, workspace, name)
 
         # PUT /workspaces/<ws>/datastores/<ds>/file.shp
         headers = {
@@ -367,7 +398,9 @@ class Catalog(object):
         except FailedRequestError, e:
             return None
 
-    def get_layers(self, resource=None, style=None):
+    def get_layers(self, resource=None):
+        if isinstance(resource, basestring):
+            resource = self.get_resource(resource)
         description = self.get_xml("%s/layers.xml" % self.service_url)
         lyrs = [Layer(self, l.find("name").text) for l in description.findall("layer")]
         if resource is not None:
@@ -389,7 +422,7 @@ class Catalog(object):
 
     def create_layergroup(self, name, layers = (), styles = (), bounds = None):
         if any(g.name == name for g in self.get_layergroups()):
-            raise ConflictingDataError("Workspace named %s already exists!" % name)
+            raise ConflictingDataError("LayerGroup named %s already exists!" % name)
         else:
             return UnsavedLayerGroup(self, name, layers, styles, bounds)
 
