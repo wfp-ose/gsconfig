@@ -23,7 +23,7 @@ REPROJECT = "REPROJECT"
 ## configured projection.
 
 def xml_property(path, converter = lambda x: x.text):
-    def get(self):
+    def getter(self):
         if path in self.dirty:
             return self.dirty[path]
         else:
@@ -32,13 +32,13 @@ def xml_property(path, converter = lambda x: x.text):
             node = self.dom.find(path)
             return converter(self.dom.find(path)) if node is not None else None
 
-    def set(self, value):
+    def setter(self, value):
         self.dirty[path] = value
 
     def delete(self):
         self.dirty[path] = None
 
-    return property(get, set, delete)
+    return property(getter, setter, delete)
 
 def bbox(node):
     if node is not None: 
@@ -153,14 +153,14 @@ def prepare_upload_bundle(name, data):
     file-like objects. The client code is responsible for deleting the zip
     archive when it's done."""
     handle, f = mkstemp() # we don't use the file handle directly. should we?
-    zip = ZipFile(f, 'w')
+    zip_file = ZipFile(f, 'w')
     for ext, stream in data.iteritems():
         fname = "%s.%s" % (name, ext)
         if (isinstance(stream, basestring)):
-            zip.write(stream, fname)
+            zip_file.write(stream, fname)
         else:
-            zip.writestr(fname, stream.read())
-    zip.close()
+            zip_file.writestr(fname, stream.read())
+    zip_file.close()
     return f
 
 def atom_link(node):

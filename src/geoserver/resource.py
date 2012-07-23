@@ -89,23 +89,23 @@ class FeatureType(ResourceInfo):
             )
 
 class CoverageDimension(object):
-    def __init__(self, name, description, range):
+    def __init__(self, name, description, dimension_range):
         self.name = name
         self.description = description
-        self.range = range
+        self.dimension_range = dimension_range
 
 def coverage_dimension(node):
     name = node.find("name")
     name = name.text if name is not None else None
     description = node.find("description")
     description = description.text if description is not None else None
-    min = node.find("range/min")
-    max = node.find("range/max")
-    range = None
+    range_min = node.find("range/min")
+    range_max = node.find("range/max")
+    dimension_range = None
     if None not in [min, max]:
-        range = float(min.text), float(max.text)
+        dimension_range = float(range_min.text), float(range_max.text)
     if None not in [name, description]:
-        return CoverageDimension(name, description, range)
+        return CoverageDimension(name, description, dimension_range)
     else:
         return None # should we bomb out more spectacularly here?
 

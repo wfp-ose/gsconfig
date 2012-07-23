@@ -65,18 +65,12 @@ class Catalog(object):
                         ))
         self._cache = dict()
 
-    def add(self, object):
-        raise NotImplementedError()
-
-    def remove(self, object):
-        raise NotImplementedError()
-
-    def delete(self, object, purge=False, recurse=False):
+    def delete(self, config_object, purge=False, recurse=False):
         """
         send a delete request
         XXX [more here]
         """
-        url = object.href
+        url = config_object.href
 
         #params aren't supported fully in httplib2 yet, so:
         params = []
@@ -123,7 +117,7 @@ class Catalog(object):
 
         if is_valid(cached_response):
             raw_text = cached_response[1]
-            return parse_or_raise(cached_response[1])
+            return parse_or_raise(raw_text)
         else:
             response, content = self.http.request(url)
             if response.status == 200:
@@ -305,14 +299,14 @@ class Catalog(object):
             "Accept": "application/xml"
         }
 
-        zip = None
+        archive = None
         ext = "geotiff"
 
         if isinstance(data, dict):
-            zip = prepare_upload_bundle(name, data)
-            message = open(zip)
+            archive = prepare_upload_bundle(name, data)
+            message = open(archive)
             if "tfw" in data:
-                headers['Content-type'] = 'application/zip'
+                headers['Content-type'] = 'application/archive'
                 ext = "worldimage"
         elif isinstance(data, basestring):
             message = open(data)
@@ -326,8 +320,8 @@ class Catalog(object):
             if headers.status != 201:
                 raise UploadError(response)
         finally:
-            if zip is not None:
-                unlink(zip)
+            if archive is not None:
+                unlink(archive)
 
     def get_resource(self, name, store=None, workspace=None):
         if store is not None:
@@ -381,12 +375,6 @@ class Catalog(object):
         # TODO: Filter by style
         return lyrs
 
-    def get_maps(self):
-        raise NotImplementedError()
-
-    def get_map(self, id=None, name=None):
-        raise NotImplementedError()
-
     def get_layergroup(self, name=None):
         try: 
             group = self.get_xml("%s/layergroups/%s.xml" % (
@@ -434,15 +422,6 @@ class Catalog(object):
 
         self._cache.clear()
         if headers.status < 200 or headers.status > 299: raise UploadError(response)
-
-    def get_namespace(self, id=None, prefix=None, uri=None):
-        raise NotImplementedError()
-
-    def get_default_namespace(self):
-        raise NotImplementedError()
-
-    def set_default_namespace(self):
-        raise NotImplementedError()
 
     def create_workspace(self, name, uri):
         xml = ("<namespace>"
