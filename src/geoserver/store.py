@@ -1,6 +1,6 @@
 import geoserver.workspace as ws
 from geoserver.resource import featuretype_from_index, coverage_from_index
-from geoserver.support import ResourceInfo, atom_link, xml_property, key_value_pairs, \
+from geoserver.support import ResourceInfo, xml_property, key_value_pairs, \
         write_bool, write_dict, write_string
 
 def datastore_from_index(catalog, workspace, node):

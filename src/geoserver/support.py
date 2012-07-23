@@ -7,25 +7,20 @@ from zipfile import ZipFile
 logger = logging.getLogger("gsconfig.support")
 
 FORCE_DECLARED = "FORCE_DECLARED"
-"""
-The projection handling policy for layers that should use coordinates
-directly while reporting the configured projection to clients.  This should be
-used when projection information is missing from the underlying datastore.
-"""
+## The projection handling policy for layers that should use coordinates
+## directly while reporting the configured projection to clients.  This should be
+## used when projection information is missing from the underlying datastore.
+
 
 FORCE_NATIVE = "FORCE_NATIVE"
-"""
-The projection handling policy for layers that should use the projection
-information from the underlying storage mechanism directly, and ignore the
-projection setting.
-"""
+## The projection handling policy for layers that should use the projection
+## information from the underlying storage mechanism directly, and ignore the
+## projection setting.
 
 REPROJECT = "REPROJECT"
-"""
-The projection handling policy for layers that should use the projection
-information from the underlying storage mechanism to reproject to the
-configured projection.
-"""
+## The projection handling policy for layers that should use the projection
+## information from the underlying storage mechanism to reproject to the
+## configured projection.
 
 def xml_property(path, converter = lambda x: x.text):
     def get(self):
@@ -63,11 +58,11 @@ def bbox(node):
 
 def string_list(node):
     if node is not None:
-       return [n.text for n in node.findall("string")]
+        return [n.text for n in node.findall("string")]
 
 def attribute_list(node):
     if node is not None:
-       return [n.text for n in node.findall("attribute/name")]
+        return [n.text for n in node.findall("attribute/name")]
 
 def key_value_pairs(node):
     if node is not None:

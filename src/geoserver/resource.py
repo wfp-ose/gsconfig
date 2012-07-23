@@ -1,8 +1,5 @@
-from geoserver.support import ResourceInfo, xml_property, write_string, \
-        atom_link, atom_link_xml, bbox, bbox_xml, write_bbox, \
-        string_list, write_string_list, attribute_list, write_bool, \
-        FORCE_NATIVE, FORCE_DECLARED, REPROJECT
-from xml.etree.ElementTree import tostring
+from geoserver.support import ResourceInfo, xml_property, write_string, bbox, \
+    write_bbox, string_list, write_string_list, attribute_list, write_bool
 
 def md_link(node):
     """Extract a metadata link tuple from an xml node"""

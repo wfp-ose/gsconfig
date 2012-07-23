@@ -1,5 +1,4 @@
-from geoserver.support import ResourceInfo, atom_link, xml_property
-import re
+from geoserver.support import ResourceInfo, xml_property
 
 class Style(ResourceInfo):
     def __init__(self, catalog, name):

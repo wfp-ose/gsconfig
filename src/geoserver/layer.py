@@ -1,9 +1,5 @@
-from geoserver.support import ResourceInfo, atom_link, atom_link_xml, \
-        xml_property, write_bool, write_string
+from geoserver.support import ResourceInfo, xml_property, write_bool
 from geoserver.style import Style
-from geoserver.resource import FeatureType, Coverage 
-
-from collections import namedtuple
 
 class _attribution(object):
     def __init__(self, title, width, height):

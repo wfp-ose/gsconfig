@@ -1,5 +1,4 @@
-from geoserver.support import atom_link, xml_property, write_bool, ResourceInfo
-import string
+from geoserver.support import xml_property, write_bool, ResourceInfo
 
 def workspace_from_index(catalog, node):
     name = node.find("name")
@@ -25,7 +24,7 @@ class Workspace(ResourceInfo):
     def datastore_url(self):
         return "%s/workspaces/%s/datastores.xml" % (self.catalog.service_url, self.name)
 
-    enabled = xml_property("enabled", lambda x: string.lower(x) == 'true')
+    enabled = xml_property("enabled", lambda x: x.lower() == 'true')
     writers = dict(
         enabled = write_bool("enabled")
     )

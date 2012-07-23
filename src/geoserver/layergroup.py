@@ -9,11 +9,11 @@ def _maybe_text(n):
 
 def _layer_list(node):
     if node is not None:
-       return [_maybe_text(n.find("name")) for n in node.findall("layer")]
+        return [_maybe_text(n.find("name")) for n in node.findall("layer")]
 
 def _style_list(node):
     if node is not None:
-       return [_maybe_text(n.find("name")) for n in node.findall("style")]
+        return [_maybe_text(n.find("name")) for n in node.findall("style")]
 
 def _write_layers(builder, layers):
     builder.start("layers", dict())
