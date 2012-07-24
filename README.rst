@@ -3,17 +3,24 @@ gsconfig.py
 
 gsconfig.py is a python library for manipulating a GeoServer instance via the GeoServer RESTConfig API. 
 
-TODOS
-=====
+Installing
+==========
 
-* Add support for adding and removing data from GeoServer
-* Maintain test coverage
+For users: ``pip install gsconfig`` 
 
+For developers: ``git clone git://github.com/dwins/gsconfig.py.git && cd gsconfig.py && python setup.py develop``
+(`virtualenv <http://virtualenv.org/>`_ to taste.)
+
+Getting Help
+============
+There is a brief manual at http://dwins.github.com/gsconfig.py/ .
+If you have questions, please ask them on the GeoServer Users mailing list: http://geoserver.org/display/GEOS/Mailing+Lists .
+Please use the Github project at http://github.com/dwins/gsconfig.py for any bug reports (and pull requests are welcome, but please include tests where possible.)
 
 Sample Layer Creation Code
 ==========================
 
-::
+.. code-block::
 
     from geoserver.catalog import Catalog
     cat = Catalog("http://localhost:8080/geoserver/")
