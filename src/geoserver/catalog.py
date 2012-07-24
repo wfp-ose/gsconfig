@@ -58,11 +58,11 @@ class Catalog(object):
     - Namespaces, which provide unique identifiers for resources
     """
 
-    def __init__(self, service_url, username="admin", password="geoserver"):
+    def __init__(self, service_url, username="admin", password="geoserver", ssl_certificate_validation=True):
         self.service_url = service_url
         if self.service_url.endswith("/"):
             self.service_url = self.service_url.strip("/")
-        self.http = httplib2.Http()
+        self.http = httplib2.Http(disable_ssl_certificate_validation=(not ssl_certificate_validation))
         self.username = username
         self.password = password
         self.http.add_credentials(self.username, self.password)
@@ -138,6 +138,12 @@ class Catalog(object):
                 return parse_or_raise(content)
             else:
                 raise FailedRequestError("Tried to make a GET request to %s but got a %d status code: \n%s" % (url, response.status, content))
+
+    def reload(self):
+        reload_url = url(self.service_url, ['reload'])
+        response = self.http.request(reload_url, "POST")
+        self._cache.clear()
+        return response
 
     def save(self, obj):
         """
