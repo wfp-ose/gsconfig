@@ -13,7 +13,6 @@ from xml.etree.ElementTree import XML
 from xml.parsers.expat import ExpatError
 
 from urlparse import urlparse
-from urllib import urlencode, quote_plus
 
 logger = logging.getLogger("gsconfig.catalog")
 
@@ -254,7 +253,7 @@ class Catalog(object):
 
         params = dict()
         if overwrite:
-            params["overwrite"] = True
+            params["update"] = "overwrite"
         if charset is not None:
             params["charset"] = charset
 
