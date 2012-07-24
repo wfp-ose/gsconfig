@@ -1,5 +1,5 @@
 from geoserver.support import ResourceInfo, bbox, write_bbox, \
-        write_string, xml_property
+        write_string, xml_property, url
 
 def _maybe_text(n):
     if n is None:
@@ -38,12 +38,13 @@ def _write_styles(builder, styles):
     builder.end("styles")
 
 class LayerGroup(ResourceInfo):
-    resource_type = "layerGroup"
-    save_method = "PUT"
-
     """
     Represents a layer group in geoserver 
     """
+
+    resource_type = "layerGroup"
+    save_method = "PUT"
+
     def __init__(self, catalog, name):
         super(LayerGroup, self).__init__()
 
@@ -54,7 +55,7 @@ class LayerGroup(ResourceInfo):
 
     @property
     def href(self):
-        return "%s/layergroups/%s.xml" % (self.catalog.service_url, self.name)
+        return url(self.catalog.service_url, ["layergroups", self.name + ".xml"])
 
     styles = xml_property("styles", _style_list)
     layers = xml_property("layers", _layer_list)
@@ -76,7 +77,7 @@ class UnsavedLayerGroup(LayerGroup):
     save_method = "POST"
     def __init__(self, catalog, name, layers, styles, bounds):
         super(UnsavedLayerGroup, self).__init__(catalog, name)
-        self.dirty.update(name = name, layers = layers, styles = styles)
+        self.dirty.update(name = name, layers = layers, styles = styles, bounds = bounds)
 
     @property
     def href(self):

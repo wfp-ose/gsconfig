@@ -1,6 +1,8 @@
 import logging
 from xml.etree.ElementTree import TreeBuilder, tostring
 from tempfile import mkstemp
+import urllib
+import urlparse
 from zipfile import ZipFile
 
 
@@ -21,6 +23,21 @@ REPROJECT = "REPROJECT"
 ## The projection handling policy for layers that should use the projection
 ## information from the underlying storage mechanism to reproject to the
 ## configured projection.
+
+def url(base, seg, query=None):
+    """
+    Create a URL from a list of path segments and an optional dict of query
+    parameters.
+    """
+
+    seg = (urllib.quote(s.strip('/')) for s in seg)
+    if query is None or len(query) == 0:
+        query_string = ''
+    else:
+        query_string = "?" + urllib.urlencode(query)
+    path = '/'.join(seg) + query_string
+    adjusted_base = base.rstrip('/') + '/'
+    return urlparse.urljoin(adjusted_base, path)
 
 def xml_property(path, converter = lambda x: x.text):
     def getter(self):
@@ -129,7 +146,7 @@ class ResourceInfo(object):
         # GeoServer will disable the resource if we omit the <enabled> tag,
         # so force it into the dirty dict before writing
         if hasattr(self, "enabled"):
-            self.enabled = self.enabled
+            self.dirty['enabled'] = self.enabled
 
         for k, writer in self.writers.items():
             if k in self.dirty:
@@ -152,7 +169,8 @@ def prepare_upload_bundle(name, data):
     these expectations, based on a basename, and a dict of extensions to paths or
     file-like objects. The client code is responsible for deleting the zip
     archive when it's done."""
-    handle, f = mkstemp() # we don't use the file handle directly. should we?
+    # handle, f = mkstemp() # we don't use the file handle directly. should we?
+    f = mkstemp()[1]
     zip_file = ZipFile(f, 'w')
     for ext, stream in data.iteritems():
         fname = "%s.%s" % (name, ext)
@@ -179,24 +197,8 @@ def atom_link_xml(builder, href):
     })
     builder.end("atom:link")
 
-def bbox(node):
-    if node is not None:
-        minx = node.find("minx")
-        maxx = node.find("maxx")
-        miny = node.find("miny")
-        maxy = node.find("maxy")
-        crs  = node.find("crs")
-        crs  = crs.text if crs is not None else None
-
-        if (None not in [minx, maxx, miny, maxy]):
-            return (minx.text, maxx.text, miny.text, maxy.text, crs)
-        else:
-            return None
-    else:
-        return None
-
-def bbox_xml(builder, bbox):
-    minx, maxx, miny, maxy, crs = bbox
+def bbox_xml(builder, box):
+    minx, maxx, miny, maxy, crs = box
     builder.start("minx", dict())
     builder.data(minx)
     builder.end("minx")

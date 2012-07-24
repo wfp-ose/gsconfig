@@ -1,5 +1,5 @@
 from geoserver.support import ResourceInfo, xml_property, write_string, bbox, \
-    write_bbox, string_list, write_string_list, attribute_list, write_bool
+    write_bbox, string_list, write_string_list, attribute_list, write_bool, url
 
 def md_link(node):
     """Extract a metadata link tuple from an xml node"""
@@ -58,12 +58,10 @@ class FeatureType(ResourceInfo):
 
     @property
     def href(self):
-        return "%s/workspaces/%s/datastores/%s/featuretypes/%s.xml" % (
-                self.catalog.service_url,
-                self.workspace.name,
-                self.store.name,
-                self.name
-                )
+        return url(self.catalog.service_url,
+            ["workspaces", self.workspace.name,
+             "datastores", self.store.name,
+             "featuretypes", self.name + ".xml"])
 
     title = xml_property("title")
     abstract = xml_property("abstract")
@@ -141,12 +139,10 @@ class Coverage(ResourceInfo):
 
     @property
     def href(self):
-        return "%s/workspaces/%s/coveragestores/%s/coverages/%s.xml" % (
-                self.catalog.service_url,
-                self.workspace.name,
-                self.store.name,
-                self.name
-                )
+        return url(self.catalog.service_url,
+            ["workspaces", self.workspace.name,
+             "coveragestores", self.store.name,
+             "coverages", self.name + ".xml"])
 
     resource_type = "coverage"
     save_method = "PUT"

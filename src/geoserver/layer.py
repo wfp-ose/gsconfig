@@ -1,4 +1,4 @@
-from geoserver.support import ResourceInfo, xml_property, write_bool
+from geoserver.support import ResourceInfo, xml_property, write_bool, url
 from geoserver.style import Style
 
 class _attribution(object):
@@ -68,7 +68,7 @@ class Layer(ResourceInfo):
 
     @property
     def href(self):
-        return "%s/layers/%s.xml" % (self.catalog.service_url, self.name)
+        return url(self.catalog.service_url, ["layers", self.name + ".xml"])
 
     @property
     def resource(self):

@@ -1,5 +1,6 @@
 import unittest
-from geoserver.catalog import Catalog, ConflictingDataError, UploadError
+from geoserver.catalog import Catalog, ConflictingDataError, UploadError, \
+    FailedRequestError
 from geoserver.support import ResourceInfo
 from geoserver.layergroup import LayerGroup
 from geoserver.util import shapefile_and_friends
@@ -105,17 +106,21 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual("popshade.sld", self.cat.get_style("population").filename)
         self.assertEqual("population", self.cat.get_style("population").sld_name)
 
-    # def testEscaping(self):
-    #     # None of these should raise an exception, but we're not testing their
-    #     # return values either.
-    #     self.cat.get_style("best style ever")
-    #     self.cat.get_workspace("best workspace ever")
-    #     self.cat.get_store(workspace="best workspace ever", name="best store ever")
-    #     self.cat.get_resource(
-    #         workspace="best workspace ever", store="best store ever",
-    #         name="best resource ever")
-    #     self.cat.get_layer("best layer ever")
-    #     self.cat.get_layergroup("best layergroup ever")
+    def testEscaping(self):
+        # GSConfig is inconsistent about using exceptions vs. returning None
+        # when a resource isn't found.
+        # But the basic idea is that none of them should throw HTTP errors from
+        # misconstructed URLS
+        self.cat.get_style("best style ever")
+        self.cat.get_workspace("best workspace ever")
+        self.cat.get_store(workspace="best workspace ever",
+                name="best store ever")
+        self.assertRaises(FailedRequestError,
+            lambda: self.cat.get_resource(
+                workspace="best workspace ever", store="best store ever",
+                name="best resource ever"))
+        self.cat.get_layer("best layer ever")
+        self.cat.get_layergroup("best layergroup ever")
 
 class ModifyingTests(unittest.TestCase):
     def setUp(self):
