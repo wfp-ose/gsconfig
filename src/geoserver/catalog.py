@@ -157,7 +157,11 @@ class Catalog(object):
         }
         logger.debug("%s %s", obj.save_method, obj.href)
         response = self.http.request(url, obj.save_method, message, headers)
+        headers, body = response
         self._cache.clear()
+        if 400 <= int(headers['status']) < 600:
+            raise FailedRequestError("Error code (%s) from GeoServer: %s" %
+                (headers['status'], body))
         return response
 
     def get_store(self, name, workspace=None):
@@ -182,6 +186,8 @@ class Catalog(object):
         else: # workspace is not None
             if isinstance(workspace, basestring):
                 workspace = self.get_workspace(workspace)
+                if workspace is None:
+                    return None
             logger.debug("datastore url is [%s]", workspace.datastore_url )
             ds_list = self.get_xml(workspace.datastore_url)
             cs_list = self.get_xml(workspace.coveragestore_url)
@@ -377,7 +383,11 @@ class Catalog(object):
                 return resource
         return None
 
-    def get_resources(self, store=None, workspace=None, namespace=None):
+    def get_resources(self, store=None, workspace=None):
+        if isinstance(workspace, basestring):
+            workspace = self.get_workspace(workspace)
+        if isinstance(store, basestring):
+            store = self.get_store(store, workspace)
         if store is not None:
             return store.get_resources()
         if workspace is not None:
