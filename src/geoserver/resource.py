@@ -21,10 +21,10 @@ def write_metadata_link_list(name):
         for (mime, md_type, content_url) in md_links:
             builder.start("metadataLink", dict())
             builder.start("type", dict())
-            builder.data(mime)
+            builder.data(md_type)
             builder.end("type")
             builder.start("metadataType", dict())
-            builder.data(md_type)
+            builder.data(mime)
             builder.end("metadataType")
             builder.start("content", dict())
             builder.data(content_url)
@@ -47,10 +47,10 @@ class FeatureType(ResourceInfo):
 
     def __init__(self, catalog, workspace, store, name):
         super(FeatureType, self).__init__()
-  
+
         assert isinstance(store, ResourceInfo)
         assert isinstance(name, basestring)
-        
+
         self.catalog = catalog
         self.workspace = workspace
         self.store = store
