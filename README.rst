@@ -13,7 +13,7 @@ For developers: ``git clone git://github.com/opengeo/gsconfig.git && cd gsconfig
 
 Getting Help
 ============
-There is a brief manual at http://dwins.github.io/gsconfig/ .
+There is a brief manual at http://opengeo.github.io/gsconfig/ .
 If you have questions, please ask them on the GeoServer Users mailing list: http://geoserver.org/display/GEOS/Mailing+Lists .
 Please use the Github project at http://github.com/opengeo/gsconfig for any bug reports (and pull requests are welcome, but please include tests where possible.)
 
