@@ -110,6 +110,7 @@ class Layer(ResourceInfo):
 
     attribution_object = xml_property("attribution", _read_attribution)
     enabled = xml_property("enabled", lambda x: x.text == "true")
+    advertised = xml_property("advertised", lambda x: x.text == "true")
     
     def _get_attr_text(self):
         return self.attribution_object.title
@@ -127,6 +128,7 @@ class Layer(ResourceInfo):
     writers = dict(
             attribution = _write_attribution,
             enabled = write_bool("enabled"),
+            advertised = write_bool("advertised"),
             default_style = _write_default_style,
             alternate_styles = _write_alternate_styles
             )
