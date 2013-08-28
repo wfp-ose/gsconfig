@@ -69,7 +69,7 @@ class FeatureType(ResourceInfo):
     title = xml_property("title")
     abstract = xml_property("abstract")
     enabled = xml_property("enabled")
-    advertised =  xml_property("advertised", lambda x: x.text == "true") if not None else True
+    advertised = xml_property("advertised")
     native_bbox = xml_property("nativeBoundingBox", bbox)
     latlon_bbox = xml_property("latLonBoundingBox", bbox)
     projection = xml_property("srs")
@@ -155,7 +155,7 @@ class Coverage(ResourceInfo):
     title = xml_property("title")
     abstract = xml_property("abstract")
     enabled = xml_property("enabled")
-    advertised =  xml_property("advertised", lambda x: x.text == "true") if not None else True
+    advertised = xml_property("advertised")
     native_bbox = xml_property("nativeBoundingBox", bbox)
     latlon_bbox = xml_property("latLonBoundingBox", bbox)
     projection = xml_property("srs")
