@@ -3,12 +3,13 @@ import logging
 from geoserver.layer import Layer
 from geoserver.store import coveragestore_from_index, datastore_from_index, \
     UnsavedDataStore, UnsavedCoverageStore
-from geoserver.style import Style
+from geoserver.style import Style, Workspace_Style
 from geoserver.support import prepare_upload_bundle, url
 from geoserver.layergroup import LayerGroup, UnsavedLayerGroup
 from geoserver.workspace import workspace_from_index, Workspace
 from os import unlink
 import httplib2
+import re
 from xml.etree.ElementTree import XML
 from xml.parsers.expat import ExpatError
 
@@ -445,6 +446,24 @@ class Catalog(object):
             style_url = url(self.service_url, ["styles", name + ".xml"])
             dom = self.get_xml(style_url)
             return Style(self, dom.find("name").text)
+        except FailedRequestError:
+            return None
+
+    def get_style_by_url(self, style_workspace_url):
+        try:
+            dom = self.get_xml(style_workspace_url)
+            rest_path = style_workspace_url[re.search(self.service_url, style_workspace_url).end():]
+            rest_segments = re.split("\/", rest_path)
+            for i,s in enumerate(rest_segments):
+                if s == "workspaces": workspace_name = rest_segments[i + 1]
+            #create an instance of Workspace_Style if a workspace is contained in the
+            # REST API style path (should always be the case /workspaces/<ws>/styles/<stylename>:
+            if isinstance(workspace_name, basestring):
+                workspace = self.get_workspace(workspace_name)
+                return Workspace_Style(self, workspace, dom.find("name").text)
+            else:
+                return Style(self, dom.find("name").text)
+            
         except FailedRequestError:
             return None
 
