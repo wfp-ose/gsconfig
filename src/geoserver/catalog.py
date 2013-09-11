@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import logging
 from geoserver.layer import Layer
+from geoserver.resource import FeatureType, Coverage
 from geoserver.store import coveragestore_from_index, datastore_from_index, \
     UnsavedDataStore, UnsavedCoverageStore
 from geoserver.style import Style, Workspace_Style
@@ -115,6 +116,7 @@ class Catalog(object):
             raise FailedRequestError("Tried to make a DELETE request to %s but got a %d status code: \n%s" % (rest_url, response.status, content))
 
     def get_xml(self, rest_url):
+        print 'get_xml', rest_url
         logger.debug("GET %s", rest_url)
 
         cached_response = self._cache.get(rest_url)
@@ -386,6 +388,18 @@ class Catalog(object):
             if resource is not None:
                 return resource
         return None
+
+    def get_resource_by_url(self, url):
+        xml = self.get_xml(url)
+        name = xml.find("name").text
+        resource = None
+        if xml.tag == 'featureType':
+            resource = FeatureType
+        elif xml.tag == 'coverage':
+            resource = Coverage
+        else:
+            raise Exception('drat')
+        return resource(self, None, None, name, href=url)
 
     def get_resources(self, store=None, workspace=None):
         if isinstance(workspace, basestring):
