@@ -139,7 +139,7 @@ class Catalog(object):
                 self._cache[rest_url] = (datetime.now(), content)
                 return parse_or_raise(content)
             else:
-                raise FailedRequestError("Tried to make a GET request to %s but got a %d status code: \n%s" % (rest_url, response.status, content))
+                raise FailedRequestError("Tried to make a GET request to %s but got a %d status code: \n%s" % (url, response.status, content))
 
     def reload(self):
         reload_url = url(self.service_url, ['reload'])
@@ -365,6 +365,14 @@ class Catalog(object):
                 unlink(archive)
 
     def get_resource(self, name, store=None, workspace=None):
+        if store is not None and workspace is not None:
+            if isinstance(workspace, basestring):
+                workspace = self.get_workspace(workspace)
+            if isinstance(store, basestring):
+                store = self.get_store(store, workspace)
+            if store is not None:
+                return store.get_resources(name)
+        
         if store is not None:
             candidates = [s for s in self.get_resources(store) if s.name == name]
             if len(candidates) == 0:
