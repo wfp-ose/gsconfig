@@ -365,6 +365,14 @@ class Catalog(object):
                 unlink(archive)
 
     def get_resource(self, name, store=None, workspace=None):
+        if store is not None and workspace is not None:
+            if isinstance(workspace, basestring):
+                workspace = self.get_workspace(workspace)
+            if isinstance(store, basestring):
+                store = self.get_store(store, workspace)
+            if store is not None:
+                return store.get_resources(name)
+        
         if store is not None:
             candidates = [s for s in self.get_resources(store) if s.name == name]
             if len(candidates) == 0:

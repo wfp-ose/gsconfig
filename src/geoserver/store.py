@@ -38,14 +38,21 @@ class DataStore(ResourceInfo):
                    connectionParameters = write_dict("connectionParameters"))
 
 
-    def get_resources(self):
+    def get_resources(self, name=None):
         res_url = url(self.catalog.service_url,
             ["workspaces", self.workspace.name, "datastores", self.name, "featuretypes.xml"])
         xml = self.catalog.get_xml(res_url)
         def ft_from_node(node):
             return featuretype_from_index(self.catalog, self.workspace, self, node)
 
+        #if name passed, return only one FeatureType, otherwise return all FeatureTypes in store:
+        if name:
+            for node in xml.findall("featureType"):
+                if node.findtext("name") == name:
+                    return ft_from_node(node)
+            return None
         return [ft_from_node(node) for node in xml.findall("featureType")]
+
 
 class UnsavedDataStore(DataStore):
     save_method = "POST"
@@ -92,7 +99,7 @@ class CoverageStore(ResourceInfo):
                    type = write_string("type"))
 
 
-    def get_resources(self):
+    def get_resources(self, name=None):
         res_url = url(self.catalog.service_url,
             ["workspaces", self.workspace.name, "coveragestores", self.name, "coverages.xml"])
 
@@ -101,6 +108,12 @@ class CoverageStore(ResourceInfo):
         def cov_from_node(node):
             return coverage_from_index(self.catalog, self.workspace, self, node)
 
+        #if name passed, return only one Coverage, otherwise return all Coverages in store:
+        if name:
+            for node in xml.findall("coverage"):
+                if node.findtext("name") == name:
+                    return cov_from_node(node)
+            return None
         return [cov_from_node(node) for node in xml.findall("coverage")]
 
 class UnsavedCoverageStore(CoverageStore):
