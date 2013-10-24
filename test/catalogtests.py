@@ -445,6 +445,22 @@ class ModifyingTests(unittest.TestCase):
         ws = self.cat.get_workspace("foo")
         self.assert_(ws is None)
 
+    def testWorkspaceDefault(self):
+        # save orig
+        orig = self.cat.get_default_workspace()
+        neu = self.cat.create_workspace("neu", "http://example.com/neu")
+        try:
+            # make sure setting it works
+            self.cat.set_default_workspace("neu")
+            ws = self.cat.get_default_workspace()
+            self.assertEqual('neu', ws.name)
+        finally:
+            # cleanup and reset to the way things were
+            self.cat.delete(neu)
+            self.cat.set_default_workspace(orig.name)
+            ws = self.cat.get_default_workspace()
+            self.assertEqual(orig.name, ws.name)
+
     def testFeatureTypeDelete(self):
         pass
 
