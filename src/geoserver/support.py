@@ -4,7 +4,7 @@ from tempfile import mkstemp
 import urllib
 import urlparse
 from zipfile import ZipFile
-
+import os
 
 logger = logging.getLogger("gsconfig.support")
 
@@ -181,9 +181,8 @@ def prepare_upload_bundle(name, data):
     these expectations, based on a basename, and a dict of extensions to paths or
     file-like objects. The client code is responsible for deleting the zip
     archive when it's done."""
-    # handle, f = mkstemp() # we don't use the file handle directly. should we?
-    f = mkstemp()[1]
-    zip_file = ZipFile(f, 'w')
+    fd, path = mkstemp()
+    zip_file = ZipFile(path, 'w')
     for ext, stream in data.iteritems():
         fname = "%s.%s" % (name, ext)
         if (isinstance(stream, basestring)):
@@ -191,7 +190,8 @@ def prepare_upload_bundle(name, data):
         else:
             zip_file.writestr(fname, stream.read())
     zip_file.close()
-    return f
+    os.close(fd)
+    return path
 
 def atom_link(node):
     if 'href' in node.attrib:
