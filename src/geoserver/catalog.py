@@ -307,18 +307,16 @@ class Catalog(object):
         if charset is not None:
             params["charset"] = charset
 
-        message = open(bundle)
         headers = { 'Content-Type': 'application/zip', 'Accept': 'application/xml' }
         upload_url = url(self.service_url, 
             ["workspaces", workspace, "datastores", store, "file.shp"], params) 
 
-        try:
-            headers, response = self.http.request(upload_url, "PUT", message, headers)
+        with open(bundle, "rb") as f:
+            data = f.read()
+            headers, response = self.http.request(upload_url, "PUT", data, headers)
             self._cache.clear()
             if headers.status != 201:
                 raise UploadError(response)
-        finally:
-            unlink(bundle)
 
     def create_featurestore(self, name, data, workspace=None, overwrite=False, charset=None):
         if not overwrite:
