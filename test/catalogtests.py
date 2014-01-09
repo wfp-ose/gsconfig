@@ -478,6 +478,12 @@ class ModifyingTests(unittest.TestCase):
 
         self.cat.save(tas)
 
+        # this verifies the local state
+        self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads'], tas.layers)
+        self.assertEqual(tas.styles, [None, None, None], tas.styles)
+
+        # force a refresh to check the remote state
+        tas.refresh()
         self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads'], tas.layers)
         self.assertEqual(tas.styles, [None, None, None], tas.styles)
 
