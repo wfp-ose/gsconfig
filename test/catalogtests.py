@@ -127,12 +127,18 @@ class CatalogTests(unittest.TestCase):
         # misconstructed URLS
         self.cat.get_style("best style ever")
         self.cat.get_workspace("best workspace ever")
-        self.cat.get_store(workspace="best workspace ever",
+        try:
+            self.cat.get_store(workspace="best workspace ever",
                 name="best store ever")
-        self.assertRaises(FailedRequestError,
-            lambda: self.cat.get_resource(
-                workspace="best workspace ever", store="best store ever",
-                name="best resource ever"))
+            self.fail('expected exception')
+        except FailedRequestError, fre:
+            self.assertEqual('No store found named: best store ever', fre.message)
+        try:
+            self.cat.get_resource(workspace="best workspace ever",
+                store="best store ever",
+                name="best resource ever")
+        except FailedRequestError, fre:
+            self.assertEqual('No store found named: best store ever', fre.message)
         self.cat.get_layer("best layer ever")
         self.cat.get_layergroup("best layergroup ever")
 
