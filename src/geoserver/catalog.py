@@ -357,6 +357,7 @@ class Catalog(object):
             if headers.status != 201:
                 raise UploadError(response)
         finally:
+            message.close()
             unlink(archive)
 
     def create_coveragestore(self, name, data, workspace=None, overwrite=False):
@@ -401,6 +402,8 @@ class Catalog(object):
             if headers.status != 201:
                 raise UploadError(response)
         finally:
+            if hasattr(message, "close"):
+                message.close()
             if archive is not None:
                 unlink(archive)
 
