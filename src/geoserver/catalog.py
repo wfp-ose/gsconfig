@@ -83,6 +83,10 @@ class Catalog(object):
         self._cache = dict()
         self._version = None
 
+    @property
+    def gs_base_url(self):
+        return self.service_url.rstrip("rest")
+
     def about(self):
         '''return the about information as a formatted html'''
         about_url = self.service_url + "/about/version.html"
