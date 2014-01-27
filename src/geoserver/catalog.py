@@ -564,7 +564,7 @@ class Catalog(object):
 
         headers, response = self.http.request(workspace_url, "POST", xml, headers)
         assert 200 <= headers.status < 300, "Tried to create workspace but got " + str(headers.status) + ": " + response
-        self._cache.clear()
+        self._cache.pop("%s/workspaces.xml" % self.service_url, None)
         return self.get_workspace(name)
 
     def get_workspaces(self):
@@ -581,7 +581,22 @@ class Catalog(object):
             return candidates[0]
 
     def get_default_workspace(self):
-        return Workspace(self, "default")
+        ws = Workspace(self, "default")
+        # must fetch and resolve the 'real' workspace from the response
+        ws.fetch()
+        return workspace_from_index(self, ws.dom)
 
-    def set_default_workspace(self):
-        raise NotImplementedError()
+    def set_default_workspace(self, name):
+        if hasattr(name, 'name'):
+            name = name.name
+        workspace = self.get_workspace(name)
+        if workspace is not None:
+            headers = { "Content-Type": "application/xml" }
+            default_workspace_url = self.service_url + "/workspaces/default.xml"
+            msg = "<workspace><name>%s</name></workspace>" % name
+            headers, response = self.http.request(default_workspace_url, "PUT", msg, headers)
+            assert 200 <= headers.status < 300, "Error setting default workspace: " + str(headers.status) + ": " + response
+            self._cache.pop(default_workspace_url, None)
+            self._cache.pop("%s/workspaces.xml" % self.service_url, None)
+        else:
+            raise FailedRequestError("no workspace named '%s'" % name)
