@@ -7,28 +7,24 @@ def _maybe_text(n):
     else:
         return n.text
 
-def _layer_list(node):
+def _layer_list(node, element):
     if node is not None:
-        return [_maybe_text(n.find("name")) for n in node.findall("layer")]        
+        return [_maybe_text(n.find("name")) for n in node.findall(element)]
         
-def _publishable_list(node):
-    if node is not None:
-        return [_maybe_text(n.find("name")) for n in node.findall("published")]
-    
 def _style_list(node):
     if node is not None:
         return [_maybe_text(n.find("name")) for n in node.findall("style")]
 
-def _write_layers(builder, layers):
-    builder.start("layers", dict())
+def _write_layers(builder, layers, parent, element, attributes):
+    builder.start(parent, dict())
     for l in layers:
-        builder.start("layer", dict())
+        builder.start(element, attributes or dict())
         if l is not None:
             builder.start("name", dict())
             builder.data(l)
             builder.end("name")
-        builder.end("layer")
-    builder.end("layers")
+        builder.end(element)
+    builder.end(parent)
 
 def _write_styles(builder, styles):
     builder.start("styles", dict())
@@ -57,25 +53,37 @@ class LayerGroup(ResourceInfo):
         self.catalog = catalog
         self.name = name
 
+        # the XML format changed in 2.3.x - the element listing all the layers
+        # and the entries themselves have changed
+        if self.catalog.gsversion() == "2.2.x":
+            parent, element, attributes = "layers", "layer", None
+        else:
+            parent, element, attributes = "publishables", "published", {'type':'layer'}
+        self._layer_parent = parent
+        self._layer_element = element
+        self._layer_attributes = attributes
+        self.writers = dict(
+            name = write_string("name"),
+            styles = _write_styles,
+            layers = lambda b,l: _write_layers(b, l, parent, element, attributes),
+            bounds = write_bbox("bounds")
+        )
+
     @property
     def href(self):
         return url(self.catalog.service_url, ["layergroups", self.name + ".xml"])
 
     styles = xml_property("styles", _style_list)
-    bounds = xml_property("bounds", bbox)    
-        
+    bounds = xml_property("bounds", bbox)
+
     def _layers_getter(self):
-        if self.catalog.gsversion() == "2.2.x":
-            path, converter = "layers", _layer_list
-        else:
-            path, converter = "publishables", _publishable_list
-        if path in self.dirty:
-            return self.dirty[path]
+        if "layers" in self.dirty:
+            return self.dirty["layers"]
         else:
             if self.dom is None:
                 self.fetch()
-            node = self.dom.find(path)
-            return converter(self.dom.find(path)) if node is not None else None
+            node = self.dom.find(self._layer_parent)
+            return _layer_list(node, self._layer_element) if node is not None else None
 
     def _layers_setter(self, value):
         self.dirty["layers"] = value
@@ -84,13 +92,6 @@ class LayerGroup(ResourceInfo):
         self.dirty["layers"] = None
     
     layers =  property(_layers_getter, _layers_setter, _layers_delete)
-
-    writers = dict(
-              name = write_string("name"),
-              styles = _write_styles,
-              layers = _write_layers,
-              bounds = write_bbox("bounds")
-            )
 
     def __str__(self):
         return "<LayerGroup %s>" % self.name
