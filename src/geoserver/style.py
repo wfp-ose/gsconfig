@@ -1,21 +1,40 @@
 from geoserver.support import ResourceInfo, url, xml_property
-import geoserver.workspace as ws
 
 class Style(ResourceInfo):
-    def __init__(self, catalog, name):
+    def __init__(self, catalog, name, workspace=None):
         super(Style, self).__init__()
         assert isinstance(name, basestring)
 
         self.catalog = catalog
+        self.workspace = workspace
         self.name = name
         self._sld_dom = None
 
     @property
+    def fqn(self):
+        return self.name if not self.workspace else '%s:%s' % (self.workspace, self.name)
+
+    @property
     def href(self):
-        return url(self.catalog.service_url, ["styles", self.name + ".xml"])
+        return self._build_href('.xml')
 
     def body_href(self):
-        return url(self.catalog.service_url, ["styles", self.name + ".sld"])
+        return self._build_href('.sld')
+
+    @property
+    def create_href(self):
+        return self._build_href('.xml', True)
+
+    def _build_href(self, extension, create=False):
+        path_parts = ["styles"]
+        query = {}
+        if not create:
+            path_parts.append(self.name + extension)
+        else:
+            query['name'] = self.name
+        if self.workspace is not None:
+            path_parts = ["workspaces", getattr(self.workspace, 'name', self.workspace)] + path_parts
+        return url(self.catalog.service_url, path_parts, query)
 
     filename = xml_property("filename")
 
@@ -45,20 +64,3 @@ class Style(ResourceInfo):
         headers = { "Content-Type": "application/vnd.ogc.sld+xml" }
         self.catalog.http.request(
             self.body_href(), "PUT", body, headers)
-
-
-
-class Workspace_Style(Style):
-    def __init__(self, catalog, workspace, name):
-        super(Workspace_Style, self).__init__(catalog, name)
-        
-        assert isinstance(workspace, ws.Workspace)
-        self.workspace = workspace
-
-
-    @property
-    def href(self):
-        return url(self.catalog.service_url, ["workspaces", self.workspace.name, "styles", self.name + ".xml"])
-
-    def body_href(self):
-        return url(self.catalog.service_url, ["workspaces", self.workspace.name, "styles", self.name + ".sld"])

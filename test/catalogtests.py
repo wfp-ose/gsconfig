@@ -119,6 +119,7 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual("population", self.cat.get_style("population").name)
         self.assertEqual("popshade.sld", self.cat.get_style("population").filename)
         self.assertEqual("population", self.cat.get_style("population").sld_name)
+        self.assert_(self.cat.get_style('non-existing-style') is None)
 
     def testEscaping(self):
         # GSConfig is inconsistent about using exceptions vs. returning None
@@ -436,6 +437,64 @@ class ModifyingTests(unittest.TestCase):
         self.cat.create_style("fred", open("test/fred.sld").read())
         fred = self.cat.get_style("fred")
         self.assertEqual("Fred", fred.sld_title)
+
+        # verify it can be found via URL and check the name
+        f = self.cat.get_style_by_url(fred.href)
+        self.assert_(f is not None)
+        self.assertEqual(f.name, fred.name)
+
+    def testWorkspaceStyles(self):
+        # upload new style, verify existence
+        self.cat.create_style("jed", open("test/fred.sld").read(), workspace="topp")
+
+        jed = self.cat.get_style("jed", workspace="blarny")
+        self.assert_(jed is None)
+        jed = self.cat.get_style("jed", workspace="topp")
+        self.assert_(jed is not None)
+        self.assertEqual("Fred", jed.sld_title)
+        jed = self.cat.get_style("topp:jed")
+        self.assert_(jed is not None)
+        self.assertEqual("Fred", jed.sld_title)
+
+        # replace style, verify changes
+        self.cat.create_style("jed", open("test/ted.sld").read(), overwrite=True, workspace="topp")
+        jed = self.cat.get_style("jed", workspace="topp")
+        self.assert_(jed is not None)
+        self.assertEqual("Ted", jed.sld_title)
+
+        # delete style, verify non-existence
+        self.cat.delete(jed, purge=True)
+        self.assert_(self.cat.get_style("jed", workspace="topp") is None)
+
+        # attempt creating new style
+        self.cat.create_style("jed", open("test/fred.sld").read(), workspace="topp")
+        jed = self.cat.get_style("jed", workspace="topp")
+        self.assertEqual("Fred", jed.sld_title)
+
+        # verify it can be found via URL and check the full name
+        f = self.cat.get_style_by_url(jed.href)
+        self.assert_(f is not None)
+        self.assertEqual(f.fqn, jed.fqn)
+
+    def testLayerWorkspaceStyles(self):
+        # upload new style, verify existence
+        self.cat.create_style("ned", open("test/fred.sld").read(), overwrite=True, workspace="topp")
+        self.cat.create_style("zed", open("test/ted.sld").read(), overwrite=True, workspace="topp")
+        ned = self.cat.get_style("ned", workspace="topp")
+        zed = self.cat.get_style("zed", workspace="topp")
+        self.assert_(ned is not None)
+        self.assert_(zed is not None)
+
+        lyr = self.cat.get_layer("states")
+        lyr.default_style = ned
+        lyr.styles = [zed]
+        self.cat.save(lyr)
+        self.assertEqual("topp:ned", lyr.default_style)
+        self.assertEqual([zed], lyr.styles)
+
+        lyr.refresh()
+        self.assertEqual("topp:ned", lyr.default_style.fqn)
+        self.assertEqual([zed.fqn], [s.fqn for s in lyr.styles])
 
     def testWorkspaceCreate(self):
         ws = self.cat.get_workspace("acme")

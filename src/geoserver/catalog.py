@@ -4,7 +4,7 @@ from geoserver.layer import Layer
 from geoserver.resource import FeatureType, Coverage
 from geoserver.store import coveragestore_from_index, datastore_from_index, \
     UnsavedDataStore, UnsavedCoverageStore
-from geoserver.style import Style, Workspace_Style
+from geoserver.style import Style
 from geoserver.support import prepare_upload_bundle, url
 from geoserver.layergroup import LayerGroup, UnsavedLayerGroup
 from geoserver.workspace import workspace_from_index, Workspace
@@ -504,55 +504,66 @@ class Catalog(object):
         else:
             return UnsavedLayerGroup(self, name, layers, styles, bounds)
 
-    def get_style(self, name):
+    def get_style(self, name, workspace=None):
+        '''Find a Style in the catalog if one exists that matches the given name.
+        If name is fully qualified in the form of `workspace:name` the workspace
+        may be ommitted.
+
+        :param name: name of the style to find
+        :param workspace: optional workspace to search in
+        '''
+        style = None
+        if ':' in name:
+            workspace, name = name.split(':', 1)
         try:
-            style_url = url(self.service_url, ["styles", name + ".xml"])
-            dom = self.get_xml(style_url)
-            return Style(self, dom.find("name").text)
+            style = Style(self, name, _name(workspace))
+            style.fetch()
         except FailedRequestError:
-            return None
+            style = None
+        return style
 
     def get_style_by_url(self, style_workspace_url):
         try:
             dom = self.get_xml(style_workspace_url)
-            rest_path = style_workspace_url[re.search(self.service_url, style_workspace_url).end():]
-            rest_segments = re.split("\/", rest_path)
-            for i,s in enumerate(rest_segments):
-                if s == "workspaces": workspace_name = rest_segments[i + 1]
-            #create an instance of Workspace_Style if a workspace is contained in the
-            # REST API style path (should always be the case /workspaces/<ws>/styles/<stylename>:
-            if isinstance(workspace_name, basestring):
-                workspace = self.get_workspace(workspace_name)
-                return Workspace_Style(self, workspace, dom.find("name").text)
-            else:
-                return Style(self, dom.find("name").text)
-            
         except FailedRequestError:
             return None
+        rest_parts = style_workspace_url.replace(self.service_url, '').split('/')
+        # check for /workspaces/<ws>/styles/<stylename>
+        workspace = None
+        if 'workspaces' in rest_parts:
+            workspace = rest_parts[rest_parts.index('workspaces') + 1]
+        return Style(self, dom.find("name").text, workspace)
 
     def get_styles(self):
         styles_url = url(self.service_url, ["styles.xml"])
         description = self.get_xml(styles_url)
         return [Style(self, s.find('name').text) for s in description.findall("style")]
 
-    def create_style(self, name, data, overwrite = False):
-        if overwrite == False and self.get_style(name) is not None:
+    def create_style(self, name, data, overwrite = False, workspace=None):
+        style = self.get_style(name, workspace)
+        if not overwrite and style is not None:
             raise ConflictingDataError("There is already a style named %s" % name)
+
+        if not overwrite or style is None:
+            headers = {
+                "Content-type": "application/xml",
+                "Accept": "application/xml"
+            }
+            xml = "<style><name>{0}</name><filename>{0}.sld</filename></style>".format(name)
+            style = Style(self, name, workspace)
+            headers, response = self.http.request(style.create_href, "POST", xml, headers)
+            if headers.status < 200 or headers.status > 299: raise UploadError(response)
 
         headers = {
             "Content-type": "application/vnd.ogc.sld+xml",
             "Accept": "application/xml"
         }
 
-        if overwrite:
-            style_url = url(self.service_url, ["styles", name + ".sld"])
-            headers, response = self.http.request(style_url, "PUT", data, headers)
-        else:
-            style_url = url(self.service_url, ["styles"], dict(name=name))
-            headers, response = self.http.request(style_url, "POST", data, headers)
-
-        self._cache.clear()
+        headers, response = self.http.request(style.body_href(), "PUT", data, headers)
         if headers.status < 200 or headers.status > 299: raise UploadError(response)
+
+        self._cache.pop(style.href, None)
+        self._cache.pop(style.body_href(), None)
 
     def create_workspace(self, name, uri):
         xml = ("<namespace>"
