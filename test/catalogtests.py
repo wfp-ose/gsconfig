@@ -209,6 +209,33 @@ class ModifyingTests(unittest.TestCase):
             passwd="password", dbtype="postgis")
         self.cat.save(ds)
 
+    def testPublishFeatureType(self):
+        # Use the other test and store creation to load vector data into a database
+        # @todo maybe load directly to database?
+        try:
+            self.testDataStoreCreateAndThenAlsoImportData()
+        except FailedRequestError:
+            pass
+        try:
+            lyr = self.cat.get_layer('import')
+            # Delete the existing layer and resource to allow republishing.
+            self.cat.delete(lyr)
+            self.cat.delete(lyr.resource)
+            ds = self.cat.get_store("gsconfig_import_test")
+            # make sure it's gone
+            self.assert_(self.cat.get_layer('import') is None)
+            self.cat.publish_featuretype("import", ds, native_crs="EPSG:4326")
+            # and now it's not
+            self.assert_(self.cat.get_layer('import') is not None)
+        finally:
+            # tear stuff down to allow the other test to pass if we run first
+            ds = self.cat.get_store("gsconfig_import_test")
+            lyr = self.cat.get_layer('import')
+            # Delete the existing layer and resource to allow republishing.
+            self.cat.delete(lyr)
+            self.cat.delete(lyr.resource)
+            self.cat.delete(ds)
+
     def testDataStoreModify(self):
         ds = self.cat.get_store("sf")
         self.assertFalse("foo" in ds.connection_parameters)

@@ -428,6 +428,29 @@ class Catalog(object):
             if archive is not None:
                 unlink(archive)
 
+    def publish_featuretype(self, name, store, native_crs, srs=None):
+        '''Publish a featuretype from data in an existing store'''
+        # @todo native_srs doesn't seem to get detected, even when in the DB
+        # metadata (at least for postgis in geometry_columns) and then there
+        # will be a misconfigured layer
+        if native_crs is None: raise ValueError("must specify native_crs")
+        srs = srs or native_crs
+        feature_type = FeatureType(self, store.workspace, store, name)
+        # because name is the in FeatureType base class, work around that
+        # and hack in these others that don't have xml properties
+        feature_type.dirty['name'] = name
+        feature_type.dirty['srs'] = srs
+        feature_type.dirty['nativeCRS'] = native_crs
+        feature_type.enabled = True
+        feature_type.title = name
+        headers = {
+            "Content-type": "application/xml",
+            "Accept": "application/xml"
+        }
+        headers, response = self.http.request(store.resource_url, "POST", feature_type.message(), headers)
+        feature_type.fetch()
+        return feature_type
+
     def get_resource(self, name, store=None, workspace=None):
         if store is not None and workspace is not None:
             if isinstance(workspace, basestring):

@@ -46,10 +46,13 @@ class DataStore(ResourceInfo):
                    type = write_string("type"),
                    connectionParameters = write_dict("connectionParameters"))
 
+    @property
+    def resource_url(self):
+        return url(self.catalog.service_url,
+            ["workspaces", self.workspace.name, "datastores", self.name, "featuretypes.xml"])
 
     def get_resources(self, name=None, available=False):
-        res_url = url(self.catalog.service_url,
-            ["workspaces", self.workspace.name, "datastores", self.name, "featuretypes.xml"])
+        res_url = self.resource_url
         if available:
             res_url += "?list=available"
         xml = self.catalog.get_xml(res_url)
