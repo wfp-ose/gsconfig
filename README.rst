@@ -47,7 +47,7 @@ Running Tests
 Since the entire purpose of this module is to interact with GeoServer, the test suite is mostly composed of `integration tests <http://en.wikipedia.org/wiki/Integration_testing>`_.  
 These tests necessarily rely on a running copy of GeoServer, and expect that this GeoServer instance will be using the default data directory that is included with GeoServer.
 This data is also included in the GeoServer source repository as ``/data/release/``.
-In addition, it is expected that there will be a postgres database available at ``postgres:postgres@localhost:5432/db``.
+In addition, it is expected that there will be a postgres database available at ``postgres:password@localhost:5432/db``.
 You can test connecting to this database with the ``psql`` command line client by running ``$ psql -d db -Upostgres -h localhost -p 5432`` (you will be prompted interactively for the password.)
 
 Here are the commands that I use to reset before running the gsconfig tests::
@@ -66,3 +66,10 @@ You can stop it with ``CTRL-C`` (but don't do that until you've run the tests!)
 You can run the gsconfig tests with the following command::
 
   $ python setup.py test
+
+Instead of restarting GeoServer after each run to reset the data, the following should allow re-running the tests::
+
+   $ git clean -dxff -- ../../../data/release/
+   $ curl -XPOST --user admin:geoserver http://localhost:8080/geoserver/rest/reload
+
+
