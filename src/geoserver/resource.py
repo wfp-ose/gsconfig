@@ -109,6 +109,7 @@ class FeatureType(_ResourceBase):
     metadata_links = xml_property("metadataLinks", metadata_link_list)
 
     writers = dict(
+                name = write_string("name"),
                 title = write_string("title"),
                 abstract = write_string("abstract"),
                 enabled = write_bool("enabled"),
@@ -116,6 +117,7 @@ class FeatureType(_ResourceBase):
                 nativeBoundingBox = write_bbox("nativeBoundingBox"),
                 latLonBoundingBox = write_bbox("latLonBoundingBox"),
                 srs = write_string("srs"),
+                nativeCRS = write_string("nativeCRS"),
                 projectionPolicy = write_string("projectionPolicy"),
                 keywords = write_string_list("keywords"),
                 metadataLinks = write_metadata_link_list("metadataLinks")
