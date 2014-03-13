@@ -180,24 +180,34 @@ class WmsStore(ResourceInfo):
                    metadata = write_dict("metadata"))
 
 
-    def get_resources(self, available=False):
-        
+    def get_resources(self, name=None, available=False):
+
         res_url = "%s/workspaces/%s/wmsstores/%s/wmslayers.xml" % (
                    self.catalog.service_url,
                    self.workspace.name,
                    self.name
                 )
+        layer_name_attr = "wmsLayer"
+
         if available:
             res_url += "?list=available"
+            layer_name_attr += 'Name'
 
         xml = self.catalog.get_xml(res_url)
         def wl_from_node(node):
             return wmslayer_from_index(self.catalog, self.workspace, self, node)
 
+        #if name passed, return only one layer, otherwise return all layers in store:
+        if name is not None:
+            for node in xml.findall(layer_name_attr):
+                if node.findtext("name") == name:
+                    return wl_from_node(node)
+            return None
+
         if available:
-            return [str(node.text) for node in xml.findall("wmsLayerName")]
+            return [str(node.text) for node in xml.findall(layer_name_attr)]
         else:
-            return [wl_from_node(node) for node in xml.findall("wmsLayer")]
+            return [wl_from_node(node) for node in xml.findall(layer_name_attr)]
 
 class UnsavedWmsStore(WmsStore):
     save_method = "POST"
