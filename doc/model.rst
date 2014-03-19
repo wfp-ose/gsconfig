@@ -70,7 +70,7 @@ If you are using other credentials (highly recommended for production,) you can 
 
     from geoserver.catalog import Catalog
     cat = Catalog("http://example.com/geoserver/rest",
-        user="root", password="t0ps3cr3t")
+        username="root", password="t0ps3cr3t")
 
 For simplicity's sake, other examples in this documentation will assume you're working against a GeoServer installed locally using the default security settings.
 
