@@ -77,10 +77,12 @@ More Examples - Updated for GeoServer 2.4+
 
 Loading the GeoServer ``catalog`` using ``gsconfig`` is quite easy. The example below allows you to connect to GeoServer by specifying custom credentials.
 
-   $ from geoserver.catalog import Catalog
-   $ cat = Catalog("http://localhost:8080/geoserver/rest/")
-   $ cat.username = "admin"
-   $ cat.password = "****"
+.. code-block::
+
+    from geoserver.catalog import Catalog
+    cat = Catalog("http://localhost:8080/geoserver/rest/")
+    cat.username = "admin"
+    cat.password = "****"
 
 The code below allows you to create a FeatureType from a Shapefile
 
