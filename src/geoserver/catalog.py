@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 import logging
+import json
 from geoserver.layer import Layer
 from geoserver.resource import FeatureType, Coverage
 from geoserver.store import coveragestore_from_index, datastore_from_index, \
     wmsstore_from_index, UnsavedDataStore, \
     UnsavedCoverageStore, UnsavedWmsStore
 from geoserver.style import Style
-from geoserver.support import prepare_upload_bundle, url
+from geoserver.support import prepare_upload_bundle, url, _decode_list, _decode_dict
 from geoserver.layergroup import LayerGroup, UnsavedLayerGroup
 from geoserver.workspace import workspace_from_index, Workspace
 from os import unlink
@@ -386,6 +387,47 @@ class Catalog(object):
             message.close()
             unlink(archive)
 
+    def create_imagemosaic(self, name, data, configure=None, workspace=None, overwrite=False, charset=None):
+        if not overwrite:
+            try:
+                store = self.get_store(name, workspace)
+                msg = "There is already a store named " + name
+                if workspace:
+                    msg += " in " + str(workspace)
+                raise ConflictingDataError(msg)
+            except FailedRequestError:
+                # we don't really expect that every layer name will be taken
+                pass
+
+        if workspace is None:
+            workspace = self.get_default_workspace()
+        workspace = _name(workspace)
+        params = dict()
+        if charset is not None:
+            params['charset'] = charset
+        if configure is not None:
+            params['configure'] = "none"
+        cs_url = url(self.service_url,
+            ["workspaces", workspace, "coveragestores", name, "file.imagemosaic"], params)
+
+        # PUT /workspaces/<ws>/coveragestores/<name>/file.imagemosaic?configure=none
+        headers = {
+            "Content-type": "application/zip",
+            "Accept": "application/xml"
+        }
+        if isinstance(data, basestring):
+            message = open(data, 'rb')
+        else:
+            message = data
+        try:
+            headers, response = self.http.request(cs_url, "PUT", message, headers)
+            self._cache.clear()
+            if headers.status != 201:
+                raise UploadError(response)
+        finally:
+            if hasattr(message, "close"):
+                message.close()
+
     def create_coveragestore(self, name, data, workspace=None, overwrite=False):
         if not overwrite:
             try:
@@ -410,12 +452,12 @@ class Catalog(object):
 
         if isinstance(data, dict):
             archive = prepare_upload_bundle(name, data)
-            message = open(archive)
+            message = open(archive, 'rb')
             if "tfw" in data:
                 headers['Content-type'] = 'application/archive'
                 ext = "worldimage"
         elif isinstance(data, basestring):
-            message = open(data)
+            message = open(data, 'rb')
         else:
             message = data
 
@@ -432,6 +474,88 @@ class Catalog(object):
                 message.close()
             if archive is not None:
                 unlink(archive)
+
+    def harvest_externalgranule(self, data, store):
+        '''Harvest a granule into an existing imagemosaic'''
+        params = dict()
+        cs_url = url(self.service_url,
+            ["workspaces", store.workspace.name, "coveragestores", store.name, "external.imagemosaic"], params)
+        # POST /workspaces/<ws>/coveragestores/<name>/external.imagemosaic
+        headers = {
+            "Content-type": "text/plain",
+            "Accept": "application/xml"
+        }
+        headers, response = self.http.request(cs_url, "POST", data, headers)
+        self._cache.clear()
+        if headers.status != 202:
+            raise UploadError(response)
+
+    def harvest_uploadgranule(self, data, store):
+        '''Harvest a granule into an existing imagemosaic'''
+        params = dict()
+        cs_url = url(self.service_url,
+            ["workspaces", store.workspace.name, "coveragestores", store.name, "file.imagemosaic"], params)
+        # POST /workspaces/<ws>/coveragestores/<name>/file.imagemosaic
+        headers = {
+            "Content-type": "application/zip",
+            "Accept": "application/xml"
+        }
+        message = open(data, 'rb')
+        try:
+            headers, response = self.http.request(cs_url, "POST", message, headers)
+            self._cache.clear()
+            if headers.status != 202:
+                raise UploadError(response)
+        finally:
+            if hasattr(message, "close"):
+                message.close()
+
+    def mosaic_coverages(self, store):
+        '''Print granules of an existing imagemosaic'''
+        params = dict()
+        cs_url = url(self.service_url,
+            ["workspaces", store.workspace.name, "coveragestores", store.name, "coverages.json"], params)
+        # GET /workspaces/<ws>/coveragestores/<name>/coverages.json
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "application/json"
+        }
+        headers, response = self.http.request(cs_url, "GET", None, headers)
+        self._cache.clear()
+        coverages = json.loads(response, object_hook=_decode_dict)
+        return coverages
+
+    def mosaic_coverage_schema(self, coverage, store):
+        '''Print granules of an existing imagemosaic'''
+        params = dict()
+        cs_url = url(self.service_url,
+            ["workspaces", store.workspace.name, "coveragestores", store.name, "coverages", coverage, "index.json"], params)
+        # GET /workspaces/<ws>/coveragestores/<name>/coverages/<coverage>/index.json
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "application/json"
+        }
+        headers, response = self.http.request(cs_url, "GET", None, headers)
+        self._cache.clear()
+        schema = json.loads(response, object_hook=_decode_dict)
+        return schema
+
+    def mosaic_granules(self, coverage, store, filter=None):
+        '''Print granules of an existing imagemosaic'''
+        params = dict()
+        if filter is not None:
+            params['filter'] = filter        
+        cs_url = url(self.service_url,
+            ["workspaces", store.workspace.name, "coveragestores", store.name, "coverages", coverage, "index/granules.json"], params)
+        # GET /workspaces/<ws>/coveragestores/<name>/coverages/<coverage>/index/granules.json
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "application/json"
+        }
+        headers, response = self.http.request(cs_url, "GET", None, headers)
+        self._cache.clear()
+        granules = json.loads(response, object_hook=_decode_dict)
+        return granules
 
     def publish_featuretype(self, name, store, native_crs, srs=None):
         '''Publish a featuretype from data in an existing store'''

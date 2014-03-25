@@ -1,5 +1,5 @@
-from geoserver.support import ResourceInfo, xml_property, write_string, bbox, \
-    write_bbox, string_list, write_string_list, attribute_list, write_bool, url
+from geoserver.support import ResourceInfo, DimensionInfo, xml_property, write_string, bbox, metadata, \
+    write_metadata, write_bbox, string_list, write_string_list, attribute_list, write_bool, url
 
 def md_link(node):
     """Extract a metadata link tuple from an xml node"""
@@ -35,7 +35,7 @@ def write_metadata_link_list(name):
             builder.end("metadataLink")
         builder.end("metadataLinks")
     return write
-
+    
 def featuretype_from_index(catalog, workspace, store, node):
     name = node.find("name")
     return FeatureType(catalog, workspace, store, name.text)
@@ -185,6 +185,7 @@ class Coverage(_ResourceBase):
     response_srs_list = xml_property("responseSRS", string_list)
     supported_formats = xml_property("supportedFormats", string_list)
     metadata_links = xml_property("metadataLinks", metadata_link_list)
+    metadata = xml_property("metadata", metadata)
 
     writers = dict(
                 title = write_string("title"),
@@ -199,7 +200,8 @@ class Coverage(_ResourceBase):
                 metadataLinks = write_metadata_link_list("metadataLinks"),
                 requestSRS = write_string_list("requestSRS"),
                 responseSRS = write_string_list("responseSRS"),
-                supportedFormats = write_string_list("supportedFormats")
+                supportedFormats = write_string_list("supportedFormats"),
+                metadata = write_metadata("metadata")
             )
 
 class WmsLayer(ResourceInfo):
