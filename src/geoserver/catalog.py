@@ -375,8 +375,9 @@ class Catalog(object):
         else:
             logger.debug('Data is a zipfile')
             archive = data
-        message = open(archive)
+        message = open(archive, 'rb')
         try:
+            # response = self.requests.post(ds_url, files={archive: open(archive, 'rb')})
             headers, response = self.http.request(ds_url, "PUT", message, headers)
             self._cache.clear()
             if headers.status != 201:
