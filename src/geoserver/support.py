@@ -136,6 +136,19 @@ def write_dict(name):
         builder.end(name)
     return write
 
+def write_metadata(name):
+    def write(builder, metadata):
+        builder.start(name, dict())
+        for k, v in metadata.iteritems():
+            builder.start("entry", dict(key=k))
+            if k in ['time', 'elevation'] or k.startswith('custom_dimension'):
+                dimension_info(builder, v)
+            else:
+                builder.data(v)
+            builder.end("entry")
+        builder.end(name)
+    return write
+
 class ResourceInfo(object):
     def __init__(self):
         self.dom = None
@@ -228,3 +241,101 @@ def bbox_xml(builder, box):
         builder.data(crs)
         builder.end("crs")
 
+def dimension_info(builder, metadata):
+    if isinstance(metadata, DimensionInfo):
+        builder.start("dimensionInfo", dict())
+        builder.start("enabled", dict())
+        builder.data(metadata.enabled)
+        builder.end("enabled")
+        if metadata.presentation is not None:
+            if metadata.presentation not in ['LIST', 'DISCRETE_INTERVAL', 'CONTINUOUS_INTERVAL']:
+                raise FailedRequestError("metadata.presentation must be one of the following 'LIST', 'DISCRETE_INTERVAL', 'CONTINUOUS_INTERVAL'")
+            else:
+                builder.start("presentation", dict())
+                builder.data(metadata.presentation)
+                builder.end("presentation")
+        if metadata.resolution is not None:
+            builder.start("resolution", dict())
+            builder.data(metadata.resolution)
+            builder.end("resolution")
+        if metadata.units is not None:
+            builder.start("units", dict())
+            builder.data(metadata.units)
+            builder.end("units")
+        if metadata.unitSymbol is not None:
+            builder.start("unitSymbol", dict())
+            builder.data(metadata.unitSymbol)
+            builder.end("unitSymbol")
+        builder.end("dimensionInfo")
+
+class DimensionInfo(object):
+    def __init__(self, name, enabled, presentation, resolution, units, unitSymbol):
+        self.name = name
+        self.enabled = enabled
+        self.presentation = presentation
+        self.resolution = resolution
+        self.units = units
+        self.unitSymbol = unitSymbol
+
+def md_dimension_info(name, node):
+    """Extract metadata Dimension Info from an xml node"""
+    enabled = node.find("enabled")
+    enabled = enabled.text if enabled is not None else None
+    presentation = node.find("presentation")
+    presentation = presentation.text if presentation is not None else None
+    resolution = node.find("resolution")
+    resolution = resolution.text if resolution is not None else None
+    units = node.find("units")
+    units = units.text if units is not None else None
+    unitSymbol = node.find("unitSymbol")
+    unitSymbol = unitSymbol.text if unitSymbol is not None else None
+    return DimensionInfo(name, enabled, presentation, resolution, units, unitSymbol)
+
+def md_entry(node):
+    """Extract metadata entries from an xml node"""
+    key = None
+    value = None
+    if 'key' in node.attrib:
+        key = node.attrib['key']
+    else:
+        key = None
+
+    if key in ['time', 'elevation'] or key.startswith('custom_dimension'):
+        value = md_dimension_info(key, node.find("dimensionInfo"))
+    else:
+        value = node.text
+        
+    if None in [key, value]:
+        return None
+    else:
+        return (key, value)
+
+def metadata(node):
+    if node is not None:
+        return dict(md_entry(n) for n in node.findall("entry"))
+
+def _decode_list(data):
+    rv = []
+    for item in data:
+        if isinstance(item, unicode):
+            item = item.encode('utf-8')
+        elif isinstance(item, list):
+            item = _decode_list(item)
+        elif isinstance(item, dict):
+            item = _decode_dict(item)
+        rv.append(item)
+    return rv
+
+def _decode_dict(data):
+    rv = {}
+    for key, value in data.iteritems():
+        if isinstance(key, unicode):
+            key = key.encode('utf-8')
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+        elif isinstance(value, list):
+            value = _decode_list(value)
+        elif isinstance(value, dict):
+            value = _decode_dict(value)
+        rv[key] = value
+    return rv
