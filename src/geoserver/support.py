@@ -105,7 +105,7 @@ def write_string(name):
 def write_bool(name):
     def write(builder, b):
         builder.start(name, dict())
-        builder.data("true" if b else "false")
+        builder.data("true" if b and b != "false" else "false")
         builder.end(name)
     return write
 
