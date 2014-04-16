@@ -119,6 +119,7 @@ def write_bbox(name):
 def write_string_list(name):
     def write(builder, words):
         builder.start(name, dict())
+        words = [w for w in words if len(w) > 0]
         for w in words:
             builder.start("string", dict())
             builder.data(w)
