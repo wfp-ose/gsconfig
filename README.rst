@@ -50,6 +50,23 @@ This data is also included in the GeoServer source repository as ``/data/release
 In addition, it is expected that there will be a postgres database available at ``postgres:password@localhost:5432/db``.
 You can test connecting to this database with the ``psql`` command line client by running ``$ psql -d db -Upostgres -h localhost -p 5432`` (you will be prompted interactively for the password.)
 
+To override the assumed database connection parameters, the following environment variables are supported:
+
+- DATABASE
+- DBUSER
+- DBPASS
+
+If present, psycopg will be used to verify the database connection prior to running the tests.
+
+If provided, the following environment variables will be used to reset the data directory:
+
+GEOSERVER_HOME
+    Location of git repository to read the clean data from. If only this option is provided
+    `git clean` will be used to reset the data.
+GEOSERVER_DATA_DIR
+    Optional location of the data dir geoserver will be running with. If provided, `rsync`
+    will be used to reset the data.
+
 Here are the commands that I use to reset before running the gsconfig tests::
 
    $ cd ~/geoserver/src/web/app/

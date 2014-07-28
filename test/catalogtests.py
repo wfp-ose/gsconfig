@@ -1,3 +1,4 @@
+import os
 import re
 import unittest
 from geoserver.catalog import Catalog, ConflictingDataError, UploadError, \
@@ -5,6 +6,48 @@ from geoserver.catalog import Catalog, ConflictingDataError, UploadError, \
 from geoserver.support import ResourceInfo, url
 from geoserver.layergroup import LayerGroup
 from geoserver.util import shapefile_and_friends
+
+DBPARAMS = dict(host="localhost", port="5432", dbtype="postgis",
+    database=os.getenv("DATABASE", "db"),
+    user=os.getenv("DBUSER", "postgres"),
+    passwd=os.getenv("DBPASS", "password")
+)
+
+try:
+    import psycopg2
+    # only used for connection sanity if present
+    conn = psycopg2.connect(('dbname=%(database)s user=%(user)s password=%(passwd)s'
+                             ' port=%(port)s host=%(host)s'
+                            ) % DBPARAMS)
+except ImportError:
+    pass
+
+# support resetting geoserver datadir
+GEOSERVER_HOME = os.getenv('GEOSERVER_HOME')
+if GEOSERVER_HOME:
+    dest = os.getenv('DATA_DIR')
+    data = os.path.join(GEOSERVER_HOME, 'data/release', '')
+    if dest:
+        os.system('rsync -v -a --delete %s %s' % (data, os.path.join(dest, '')))
+    else:
+        os.system('git clean -dxf -- %s' % data)
+    os.system('curl -XPOST --user admin:geoserver http://localhost:8080/geoserver/rest/reload')
+
+
+def drop_table(table):
+    def outer(func):
+        def inner(*args):
+            try: func(*args)
+            finally:
+                try:
+                    if conn:
+                        conn.cursor().execute('DROP TABLE %s' % table)
+                except Exception,e:
+                    print 'ERROR dropping table'
+                    print e
+        return inner
+    return outer
+
 
 class CatalogTests(unittest.TestCase):
     def setUp(self):
@@ -204,9 +247,7 @@ class ModifyingTests(unittest.TestCase):
 
     def testDataStoreCreate(self):
         ds = self.cat.create_datastore("vector_gsconfig")
-        ds.connection_parameters.update(
-            host="localhost", port="5432", database="db", user="postgres",
-            passwd="password", dbtype="postgis")
+        ds.connection_parameters.update(**DBPARAMS)
         self.cat.save(ds)
 
     def testPublishFeatureType(self):
@@ -248,11 +289,10 @@ class ModifyingTests(unittest.TestCase):
         self.assertEqual("bar", ds.connection_parameters["foo"])
         self.assertEqual(orig_ws, ds.workspace.name)
 
+    @drop_table('import')
     def testDataStoreCreateAndThenAlsoImportData(self):
         ds = self.cat.create_datastore("gsconfig_import_test")
-        ds.connection_parameters.update(
-            host="localhost", port="5432", database="db", user="postgres",
-            passwd="password", dbtype="postgis")
+        ds.connection_parameters.update(**DBPARAMS)
         self.cat.save(ds)
         ds = self.cat.get_store("gsconfig_import_test")
         self.cat.add_data_to_store(ds, "import", {
