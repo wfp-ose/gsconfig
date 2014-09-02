@@ -1,9 +1,11 @@
 import os
 import re
 import unittest
+import gisdata
 from geoserver.catalog import Catalog, ConflictingDataError, UploadError, \
     FailedRequestError
 from geoserver.support import ResourceInfo, url
+from geoserver.support import DimensionInfo
 from geoserver.layergroup import LayerGroup
 from geoserver.util import shapefile_and_friends
 
@@ -47,6 +49,24 @@ def drop_table(table):
                     print e
         return inner
     return outer
+
+
+class NonCatalogTests(unittest.TestCase):
+
+    def testDimensionInfo(self):
+        inf = DimensionInfo( * (None,) * 6 )
+        # make sure these work with no resolution set
+        self.assertTrue(inf.resolution_millis() is None)
+        self.assertTrue(inf.resolution_str() is None)
+
+        inf = lambda r: DimensionInfo(None, None, None, r, None, None)
+        def assertEqualResolution(spec, millis):
+            self.assertEqual(millis, inf(spec).resolution_millis())
+            self.assertEqual(spec, inf(millis).resolution_str())
+
+        assertEqualResolution('0.5 seconds', 500)
+        assertEqualResolution('7 days', 604800000)
+        assertEqualResolution('10 years', 315360000000000)
 
 
 class CatalogTests(unittest.TestCase):
@@ -654,6 +674,53 @@ class ModifyingTests(unittest.TestCase):
         tas.refresh()
         self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads'], tas.layers)
         self.assertEqual(tas.styles, [None, None, None], tas.styles)
+
+    def testTimeDimension(self):
+        sf = self.cat.get_workspace("sf")
+        files = shapefile_and_friends(os.path.join(gisdata.GOOD_DATA, "time", "boxes_with_end_date"))
+        self.cat.create_featurestore("boxes_with_end_date", files, sf)
+
+        get_resource = lambda: self.cat._cache.clear() or self.cat.get_layer('boxes_with_end_date').resource
+
+        # configure time as LIST
+        resource = get_resource()
+        timeInfo = DimensionInfo("time", "true", "LIST", None, "ISO8601", None, attribute="date")
+        resource.metadata = {'time':timeInfo}
+        self.cat.save(resource)
+        # and verify
+        resource = get_resource()
+        timeInfo = resource.metadata['time']
+        self.assertEqual("LIST", timeInfo.presentation)
+        self.assertEqual(True, timeInfo.enabled)
+        self.assertEqual("date", timeInfo.attribute)
+        self.assertEqual("ISO8601", timeInfo.units)
+
+        # disable time dimension
+        timeInfo = resource.metadata['time']
+        timeInfo.enabled = False
+        # since this is an xml property, it won't get written unless we modify it
+        resource.metadata = {'time' : timeInfo}
+        self.cat.save(resource)
+        # and verify
+        resource = get_resource()
+        timeInfo = resource.metadata['time']
+        self.assertEqual(False, timeInfo.enabled)
+
+        # configure with interval, end_attribute and enable again
+        timeInfo.enabled = True
+        timeInfo.presentation = 'DISCRETE_INTERVAL'
+        timeInfo.resolution = '3 days'
+        timeInfo.end_attribute = 'enddate'
+        resource.metadata = {'time' : timeInfo}
+        self.cat.save(resource)
+        # and verify
+        resource = get_resource()
+        timeInfo = resource.metadata['time']
+        self.assertEqual(True, timeInfo.enabled)
+        self.assertEqual('DISCRETE_INTERVAL', timeInfo.presentation)
+        self.assertEqual('3 days', timeInfo.resolution_str())
+        self.assertEqual('enddate', timeInfo.end_attribute)
+
 
 if __name__ == "__main__":
     unittest.main()
