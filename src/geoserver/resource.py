@@ -107,6 +107,7 @@ class FeatureType(_ResourceBase):
     keywords = xml_property("keywords", string_list)
     attributes = xml_property("attributes", attribute_list)
     metadata_links = xml_property("metadataLinks", metadata_link_list)
+    metadata = xml_property("metadata", metadata)
 
     writers = dict(
                 name = write_string("name"),
@@ -120,7 +121,8 @@ class FeatureType(_ResourceBase):
                 nativeCRS = write_string("nativeCRS"),
                 projectionPolicy = write_string("projectionPolicy"),
                 keywords = write_string_list("keywords"),
-                metadataLinks = write_metadata_link_list("metadataLinks")
+                metadataLinks = write_metadata_link_list("metadataLinks"),
+                metadata = write_metadata("metadata")
             )
 
 class CoverageDimension(object):

@@ -144,6 +144,8 @@ def write_metadata(name):
             builder.start("entry", dict(key=k))
             if k in ['time', 'elevation'] or k.startswith('custom_dimension'):
                 dimension_info(builder, v)
+            elif k == 'DynamicDefaultValues':
+                dynamic_default_values_info(builder, v)
             else:
                 builder.data(v)
             builder.end("entry")
@@ -246,18 +248,27 @@ def dimension_info(builder, metadata):
     if isinstance(metadata, DimensionInfo):
         builder.start("dimensionInfo", dict())
         builder.start("enabled", dict())
-        builder.data(metadata.enabled)
+        builder.data("true" if metadata.enabled else "false")
         builder.end("enabled")
         if metadata.presentation is not None:
-            if metadata.presentation not in ['LIST', 'DISCRETE_INTERVAL', 'CONTINUOUS_INTERVAL']:
-                raise FailedRequestError("metadata.presentation must be one of the following 'LIST', 'DISCRETE_INTERVAL', 'CONTINUOUS_INTERVAL'")
+            accepted = ['LIST', 'DISCRETE_INTERVAL', 'CONTINUOUS_INTERVAL']
+            if metadata.presentation not in accepted:
+                raise ValueError("metadata.presentation must be one of the following %s" % accepted)
             else:
                 builder.start("presentation", dict())
                 builder.data(metadata.presentation)
                 builder.end("presentation")
+        if metadata.attribute is not None:
+            builder.start("attribute", dict())
+            builder.data(metadata.attribute)
+            builder.end("attribute")
+        if metadata.end_attribute is not None:
+            builder.start("endAttribute", dict())
+            builder.data(metadata.end_attribute)
+            builder.end("endAttribute")
         if metadata.resolution is not None:
             builder.start("resolution", dict())
-            builder.data(metadata.resolution)
+            builder.data(str(metadata.resolution_millis()))
             builder.end("resolution")
         if metadata.units is not None:
             builder.start("units", dict())
@@ -267,30 +278,132 @@ def dimension_info(builder, metadata):
             builder.start("unitSymbol", dict())
             builder.data(metadata.unitSymbol)
             builder.end("unitSymbol")
+        if metadata.strategy is not None:
+            builder.start("defaultValue", dict())
+            builder.start("strategy", dict())
+            builder.data(metadata.strategy)
+            builder.end("strategy")
+            builder.end("defaultValue")
+            
         builder.end("dimensionInfo")
 
 class DimensionInfo(object):
-    def __init__(self, name, enabled, presentation, resolution, units, unitSymbol):
+
+    _lookup = (
+        ('seconds', 1),
+        ('minutes', 60),
+        ('hours', 3600),
+        ('days', 86400),
+        ('months', 2628000000), # this is the number geoserver computes for 1 month
+        ('years', 31536000000)
+    )
+
+    def __init__(self, name, enabled, presentation, resolution, units, unitSymbol, strategy=None, attribute=None, end_attribute=None):
         self.name = name
         self.enabled = enabled
+        self.attribute = attribute
+        self.end_attribute = end_attribute
         self.presentation = presentation
         self.resolution = resolution
         self.units = units
         self.unitSymbol = unitSymbol
+        self.strategy = strategy
+
+    def _multipier(self, name):
+        name = name.lower()
+        found = [ i[1] for i in self._lookup if i[0] == name ]
+        if not found: raise ValueError('invalid multipler: %s' % name)
+        return found[0] if found else None
+    
+    def resolution_millis(self):
+        '''if set, get the value of resolution in milliseconds'''
+        if self.resolution is None or not isinstance(self.resolution, basestring):
+                return self.resolution
+        val, mult = self.resolution.split(' ')
+        return int(float(val) * self._multipier(mult) * 1000)
+
+    def resolution_str(self):
+        '''if set, get the value of resolution as "<n> <period>s", for example: "8 seconds"'''
+        if self.resolution is None or isinstance(self.resolution, basestring):
+            return self.resolution
+        seconds = self.resolution / 1000.
+        biggest = self._lookup[0]
+        for entry in self._lookup:
+            if seconds < entry[1]: break
+            biggest = entry
+        val = seconds / biggest[1]
+        if val == int(val):
+            val = int(val)
+        return '%s %s' % (val, biggest[0])
+
 
 def md_dimension_info(name, node):
     """Extract metadata Dimension Info from an xml node"""
-    enabled = node.find("enabled")
-    enabled = enabled.text if enabled is not None else None
-    presentation = node.find("presentation")
-    presentation = presentation.text if presentation is not None else None
-    resolution = node.find("resolution")
-    resolution = resolution.text if resolution is not None else None
-    units = node.find("units")
-    units = units.text if units is not None else None
-    unitSymbol = node.find("unitSymbol")
-    unitSymbol = unitSymbol.text if unitSymbol is not None else None
-    return DimensionInfo(name, enabled, presentation, resolution, units, unitSymbol)
+    child_text = lambda child_name: getattr(node.find(child_name), 'text', None)
+    resolution = child_text('resolution')
+    return DimensionInfo(
+        name, 
+        child_text('enabled') == 'true',
+        child_text('presentation'),
+        int(resolution) if resolution else None,
+        child_text('units'),
+        child_text('unitSymbol'),
+        child_text('strategy'),
+        child_text('attribute'),
+        child_text('endAttribute'),
+    )
+
+def dynamic_default_values_info(builder, metadata):
+    if isinstance(metadata, DynamicDefaultValues):
+        builder.start("DynamicDefaultValues", dict())
+        
+        if metadata.configurations is not None:
+            builder.start("configurations", dict())
+            for c in metadata.configurations:
+                builder.start("configuration", dict())
+                if c.dimension is not None:
+                    builder.start("dimension", dict())
+                    builder.data(c.dimension)
+                    builder.end("dimension")
+                if c.policy is not None:
+                    builder.start("policy", dict())
+                    builder.data(c.policy)
+                    builder.end("policy")
+                if c.defaultValueExpression is not None:
+                    builder.start("defaultValueExpression", dict())
+                    builder.data(c.defaultValueExpression)
+                    builder.end("defaultValueExpression")
+                builder.end("configuration")
+            builder.end("configurations")
+        builder.end("DynamicDefaultValues")
+        
+class DynamicDefaultValuesConfiguration(object):
+    def __init__(self, dimension, policy, defaultValueExpression):
+        self.dimension = dimension
+        self.policy = policy
+        self.defaultValueExpression = defaultValueExpression
+
+class DynamicDefaultValues(object):
+    def __init__(self, name, configurations):
+        self.name = name
+        self.configurations = configurations
+
+def md_dynamic_default_values_info(name, node):
+    """Extract metadata Dynamic Default Values from an xml node"""
+    configurations = node.find("configurations")
+    if configurations is not None:
+        configurations = []
+        for n in node.findall("configuration"):
+            dimension = n.find("dimension")
+            dimension = dimension.text if dimension is not None else None
+            policy = n.find("policy")
+            policy = policy.text if policy is not None else None
+            defaultValueExpression = n.find("defaultValueExpression")
+            defaultValueExpression = defaultValueExpression.text if defaultValueExpression is not None else None
+            
+            configurations.append(DynamicDefaultValuesConfiguration(dimension, policy, defaultValueExpression))
+            
+    return DynamicDefaultValues(name, configurations)
 
 def md_entry(node):
     """Extract metadata entries from an xml node"""
@@ -303,6 +416,8 @@ def md_entry(node):
 
     if key in ['time', 'elevation'] or key.startswith('custom_dimension'):
         value = md_dimension_info(key, node.find("dimensionInfo"))
+    elif key == 'DynamicDefaultValues':
+        value = md_dynamic_default_values_info(key, node.find("DynamicDefaultValues"))
     else:
         value = node.text
         
