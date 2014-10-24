@@ -193,6 +193,12 @@ class Catalog(object):
         self._cache.clear()
         return response
 
+    def reset(self):
+        reload_url = url(self.service_url, ['reset'])
+        response = self.http.request(reload_url, "POST")
+        self._cache.clear()
+        return response
+
     def save(self, obj):
         """
         saves an object to the REST service
