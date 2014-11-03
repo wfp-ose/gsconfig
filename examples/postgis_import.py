@@ -10,7 +10,7 @@ ds.connection_parameters.update(
     port="5432",
     database="gis",
     user="postgres",
-    password="",
+    passwd="",
     dbtype="postgis")
 
 cat.save(ds)
