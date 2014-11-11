@@ -460,7 +460,9 @@ class Catalog(object):
             archive = prepare_upload_bundle(name, data)
             message = open(archive, 'rb')
             if "tfw" in data:
-                headers['Content-type'] = 'application/archive'
+                # If application/archive was used, server crashes with a 500 error
+                # read in many sites that application/zip will do the trick. Successfully tested
+                headers['Content-type'] = 'application/zip'
                 ext = "worldimage"
         elif isinstance(data, basestring):
             message = open(data, 'rb')
