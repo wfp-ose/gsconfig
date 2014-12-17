@@ -413,7 +413,7 @@ class ModifyingTests(unittest.TestCase):
         for layer in available_layers:
             # sanitize the layer name - validation will fail on newer geoservers
             name = layer.replace(':', '_')
-            new_layer = self.cat.create_wmslayer(wmstest, wmsstore, layer, nativeName=layer)
+            new_layer = self.cat.create_wmslayer(wmstest, wmsstore, name, nativeName=layer)
         added_layers = wmsstore.get_resources()
         self.assertEqual(len(available_layers), len(added_layers))
 
