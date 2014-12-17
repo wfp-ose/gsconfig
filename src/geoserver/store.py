@@ -169,6 +169,7 @@ class WmsStore(ResourceInfo):
 
     enabled = xml_property("enabled", lambda x: x.text == "true")
     name = xml_property("name")
+    nativeName = xml_property("nativeName")
     capabilitiesURL = xml_property("capabilitiesURL")
     type = xml_property("type")
     metadata = xml_property("metadata", key_value_pairs)

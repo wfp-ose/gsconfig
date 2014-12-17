@@ -304,14 +304,19 @@ class Catalog(object):
             workspace = self.get_default_workspace()
         return UnsavedWmsStore(self, name, workspace, user, password)
 
-    def create_wmslayer(self, workspace, store, name):
+    def create_wmslayer(self, workspace, store, name, nativeName=None):
         headers = {
             "Content-type": "text/xml",
             "Accept": "application/xml"
         }
+        # if not provided, fallback to name - this is what geoserver will do
+        # anyway but nativeName needs to be provided if name is invalid xml
+        # as this will cause verification errors since geoserver 2.6.1
+        if nativeName is None:
+            nativeName = name
 
         wms_url = store.href.replace('.xml', '/wmslayers')
-        data = "<wmsLayer><name>%s</name></wmsLayer>" % name
+        data = "<wmsLayer><name>%s</name><nativeName>%s</nativeName></wmsLayer>" % (name, nativeName)
         headers, response = self.http.request(wms_url, "POST", data, headers)
 
         self._cache.clear()
