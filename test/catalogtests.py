@@ -417,6 +417,18 @@ class ModifyingTests(unittest.TestCase):
         added_layers = wmsstore.get_resources()
         self.assertEqual(len(available_layers), len(added_layers))
 
+        changed_layer = added_layers[0]
+        self.assertEqual(True, changed_layer.advertised)
+        self.assertEqual(True, changed_layer.enabled)
+        changed_layer.advertised = False
+        changed_layer.enabled = False
+        self.cat.save(changed_layer)
+        self.cat._cache.clear()
+        changed_layer = wmsstore.get_resources()[0]
+        changed_layer.fetch()
+        self.assertEqual(False, changed_layer.advertised)
+        self.assertEqual(False, changed_layer.enabled)
+
     def testFeatureTypeCreate(self):
         shapefile_plus_sidecars = shapefile_and_friends("test/data/states")
         expected = {

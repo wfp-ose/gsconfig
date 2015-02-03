@@ -236,9 +236,10 @@ class WmsLayer(ResourceInfo):
     native_bbox = xml_property("nativeBoundingBox", bbox)
     latlon_bbox = xml_property("latLonBoundingBox", bbox)
     projection_policy = xml_property("projectionPolicy")
-    enabled = xml_property("enabled")
-    metadata_links = xml_property("metadataLinks", metadata_link_list)   
- 
+    enabled = xml_property("enabled", lambda x: x.text == "true")
+    advertised = xml_property("advertised", lambda x: x.text == "true", default=True)
+    metadata_links = xml_property("metadataLinks", metadata_link_list)
+
     writers = dict(
                 title = write_string("title"),
                 description = write_string("description"),
@@ -250,5 +251,6 @@ class WmsLayer(ResourceInfo):
                 latLonBoundingBox = write_bbox("latLonBoundingBox"),
                 projection_policy = write_string("projectionPolicy"),
                 enabled = write_bool("enabled"),
+                advertised = write_bool("advertised"),
                 metadataLinks = write_metadata_link_list("metadataLinks")
            )
