@@ -777,7 +777,7 @@ class Catalog(object):
         description = self.get_xml(styles_url)
         return [Style(self, s.find('name').text) for s in description.findall("style")]
 
-    def create_style(self, name, data, overwrite = False, workspace=None):
+    def create_style(self, name, data, overwrite = False, workspace=None, style_format="sld10", raw=False):
         style = self.get_style(name, workspace)
         if not overwrite and style is not None:
             raise ConflictingDataError("There is already a style named %s" % name)
@@ -788,20 +788,23 @@ class Catalog(object):
                 "Accept": "application/xml"
             }
             xml = "<style><name>{0}</name><filename>{0}.sld</filename></style>".format(name)
-            style = Style(self, name, workspace)
+            style = Style(self, name, workspace, style_format)
             headers, response = self.http.request(style.create_href, "POST", xml, headers)
             if headers.status < 200 or headers.status > 299: raise UploadError(response)
 
         headers = {
-            "Content-type": "application/vnd.ogc.sld+xml",
+            "Content-type": style.content_type,
             "Accept": "application/xml"
         }
 
-        headers, response = self.http.request(style.body_href(), "PUT", data, headers)
+        body_href = style.body_href
+        if raw:
+            body_href += "?raw=true"
+        headers, response = self.http.request(body_href, "PUT", data, headers)
         if headers.status < 200 or headers.status > 299: raise UploadError(response)
 
         self._cache.pop(style.href, None)
-        self._cache.pop(style.body_href(), None)
+        self._cache.pop(style.body_href, None)
 
     def create_workspace(self, name, uri):
         xml = ("<namespace>"
