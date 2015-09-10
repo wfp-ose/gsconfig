@@ -9,12 +9,12 @@ except IOError,e:
     readme_text = ''
 
 setup(name = "gsconfig",
-    version = "0.6.11",
+    version = "0.6.14",
     description = "GeoServer REST Configuration",
     long_description = readme_text,
     keywords = "GeoServer REST Configuration",
     license = "MIT",
-    url = "http://github.com/opengeo/gsconfig.py",
+    url = "https://github.com/boundlessgeo/gsconfig",
     author = "David Winslow, Sebastian Benthall",
     author_email = "dwinslow@opengeo.org",
     install_requires = ['httplib2>=0.7.4',
