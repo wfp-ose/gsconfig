@@ -89,7 +89,7 @@ class CatalogTests(unittest.TestCase):
 
     def testWorkspaces(self):
         self.assertEqual(7, len(self.cat.get_workspaces()))
-        # marking out test since geoserver default workspace is not consistent 
+        # marking out test since geoserver default workspace is not consistent
         # self.assertEqual("cite", self.cat.get_default_workspace().name)
         self.assertEqual("topp", self.cat.get_workspace("topp").name)
 
@@ -106,7 +106,7 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual("sfdem", self.cat.get_store("sfdem", sf).name)
         self.assertEqual("sfdem", self.cat.get_store("sfdem").name)
 
-  
+
     def testResources(self):
         topp = self.cat.get_workspace("topp")
         sf = self.cat.get_workspace("sf")
@@ -247,7 +247,7 @@ class ModifyingTests(unittest.TestCase):
         rs = self.cat.get_resource("bugsites")
         self.assertEqual(["bugsites", "gsconfig"], rs.keywords)
         self.assertEqual(enabled, rs.enabled)
-        
+
         # Change metadata links on server
         rs.metadata_links = [("text/xml", "TC211", "http://example.com/gsconfig.test.metadata")]
         enabled = rs.enabled
@@ -321,17 +321,17 @@ class ModifyingTests(unittest.TestCase):
         self.cat.save(ds)
         ds = self.cat.get_store("gsconfig_import_test")
         self.cat.add_data_to_store(ds, "import", {
-            'shp': 'data/states.shp',
-            'shx': 'data/states.shx',
-            'dbf': 'data/states.dbf',
-            'prj': 'data/states.prj'
+            'shp': 'test/data/states.shp',
+            'shx': 'test/data/states.shx',
+            'dbf': 'test/data/states.dbf',
+            'prj': 'test/data/states.prj'
         })
 
-    # DISABLED; this test works only in the very particular case 
+    # DISABLED; this test works only in the very particular case
     # "mytiff.tiff" is already present into the GEOSERVER_DATA_DIR
     # def testCoverageStoreCreate(self):
     #     ds = self.cat.create_coveragestore2("coverage_gsconfig")
-    #     ds.data_url = "file:data/mytiff.tiff"
+    #     ds.data_url = "file:test/data/mytiff.tiff"
     #     self.cat.save(ds)
 
     def testCoverageStoreModify(self):
@@ -345,7 +345,7 @@ class ModifyingTests(unittest.TestCase):
         # not sure about order of test runs here, but it might cause problems
         # for other tests if this layer is misconfigured
         cs.type = "GeoTIFF"
-        self.cat.save(cs) 
+        self.cat.save(cs)
 
     def testCoverageSave(self):
         # test saving round trip
@@ -406,7 +406,7 @@ class ModifyingTests(unittest.TestCase):
         ws.capabilitiesURL = "http://suite.opengeo.org/geoserver/ows?service=wms&version=1.1.1&request=GetCapabilities"
         ws.type = "WMS"
         self.cat.save(ws)
-     
+
     def testWmsLayer(self):
         self.cat.create_workspace("wmstest", "http://example.com/wmstest")
         wmstest = self.cat.get_workspace("wmstest")
@@ -437,25 +437,25 @@ class ModifyingTests(unittest.TestCase):
         self.assertEqual(False, changed_layer.enabled)
 
     def testFeatureTypeCreate(self):
-        shapefile_plus_sidecars = shapefile_and_friends("data/states")
+        shapefile_plus_sidecars = shapefile_and_friends("test/data/states")
         expected = {
-            'shp': 'data/states.shp',
-            'shx': 'data/states.shx',
-            'dbf': 'data/states.dbf',
-            'prj': 'data/states.prj'
+            'shp': 'test/data/states.shp',
+            'shx': 'test/data/states.shx',
+            'dbf': 'test/data/states.dbf',
+            'prj': 'test/data/states.prj'
         }
 
         self.assertEqual(len(expected), len(shapefile_plus_sidecars))
         for k, v in expected.iteritems():
             self.assertEqual(v, shapefile_plus_sidecars[k])
- 
+
         sf = self.cat.get_workspace("sf")
         self.cat.create_featurestore("states_test", shapefile_plus_sidecars, sf)
 
         self.assert_(self.cat.get_resource("states_test", workspace=sf) is not None)
 
         self.assertRaises(
-            ConflictingDataError, 
+            ConflictingDataError,
             lambda: self.cat.create_featurestore("states_test", shapefile_plus_sidecars, sf)
         )
 
@@ -465,10 +465,10 @@ class ModifyingTests(unittest.TestCase):
         )
 
         bogus_shp = {
-            'shp': 'data/Pk50095.tif',
-            'shx': 'data/Pk50095.tif',
-            'dbf': 'data/Pk50095.tfw',
-            'prj': 'data/Pk50095.prj'
+            'shp': 'test/data/Pk50095.tif',
+            'shx': 'test/data/Pk50095.tif',
+            'dbf': 'test/data/Pk50095.tfw',
+            'prj': 'test/data/Pk50095.prj'
         }
 
         self.assertRaises(
@@ -483,9 +483,9 @@ class ModifyingTests(unittest.TestCase):
 
     def testCoverageCreate(self):
         tiffdata = {
-            'tiff': 'data/Pk50095.tif',
-            'tfw':  'data/Pk50095.tfw',
-            'prj':  'data/Pk50095.prj'
+            'tiff': 'test/data/Pk50095.tif',
+            'tfw':  'test/data/Pk50095.tfw',
+            'prj':  'test/data/Pk50095.prj'
         }
 
         sf = self.cat.get_workspace("sf")
@@ -495,19 +495,19 @@ class ModifyingTests(unittest.TestCase):
         # self.assert_(self.cat.get_resource("Pk50095", workspace=sf) is not None)
 
         # self.assertRaises(
-        #         ConflictingDataError, 
+        #         ConflictingDataError,
         #         lambda: self.cat.create_coveragestore("Pk50095", tiffdata, sf)
         # )
 
         self.assertRaises(
-            UploadError, 
+            UploadError,
             lambda: self.cat.create_featurestore("Pk50095_vector", tiffdata, sf)
         )
 
         bogus_tiff = {
-            'tiff': 'data/states.shp',
-            'tfw':  'data/states.shx',
-            'prj':  'data/states.prj'
+            'tiff': 'test/data/states.shp',
+            'tfw':  'test/data/states.shx',
+            'prj':  'test/data/states.prj'
         }
 
         self.assertRaises(
@@ -534,7 +534,7 @@ class ModifyingTests(unittest.TestCase):
         self.assertEqual(old_attribution, lyr.attribution)
 
         self.assertEqual(lyr.default_style.name, "population")
-     
+
         old_default_style = lyr.default_style
         lyr.default_style = (s for s in lyr.styles if s.name == "pophatch").next()
         lyr.styles = [old_default_style]
@@ -546,13 +546,13 @@ class ModifyingTests(unittest.TestCase):
 
     def testStyles(self):
         # upload new style, verify existence
-        self.cat.create_style("fred", open("fred.sld").read())
+        self.cat.create_style("fred", open("test/fred.sld").read())
         fred = self.cat.get_style("fred")
         self.assert_(fred is not None)
         self.assertEqual("Fred", fred.sld_title)
 
         # replace style, verify changes
-        self.cat.create_style("fred", open("ted.sld").read(), overwrite=True)
+        self.cat.create_style("fred", open("test/ted.sld").read(), overwrite=True)
         fred = self.cat.get_style("fred")
         self.assert_(fred is not None)
         self.assertEqual("Ted", fred.sld_title)
@@ -562,7 +562,7 @@ class ModifyingTests(unittest.TestCase):
         self.assert_(self.cat.get_style("fred") is None)
 
         # attempt creating new style
-        self.cat.create_style("fred", open("fred.sld").read())
+        self.cat.create_style("fred", open("test/fred.sld").read())
         fred = self.cat.get_style("fred")
         self.assertEqual("Fred", fred.sld_title)
 
@@ -573,7 +573,7 @@ class ModifyingTests(unittest.TestCase):
 
     def testWorkspaceStyles(self):
         # upload new style, verify existence
-        self.cat.create_style("jed", open("fred.sld").read(), workspace="topp")
+        self.cat.create_style("jed", open("test/fred.sld").read(), workspace="topp")
 
         jed = self.cat.get_style("jed", workspace="blarny")
         self.assert_(jed is None)
@@ -585,7 +585,7 @@ class ModifyingTests(unittest.TestCase):
         self.assertEqual("Fred", jed.sld_title)
 
         # replace style, verify changes
-        self.cat.create_style("jed", open("ted.sld").read(), overwrite=True, workspace="topp")
+        self.cat.create_style("jed", open("test/ted.sld").read(), overwrite=True, workspace="topp")
         jed = self.cat.get_style("jed", workspace="topp")
         self.assert_(jed is not None)
         self.assertEqual("Ted", jed.sld_title)
@@ -595,7 +595,7 @@ class ModifyingTests(unittest.TestCase):
         self.assert_(self.cat.get_style("jed", workspace="topp") is None)
 
         # attempt creating new style
-        self.cat.create_style("jed", open("fred.sld").read(), workspace="topp")
+        self.cat.create_style("jed", open("test/fred.sld").read(), workspace="topp")
         jed = self.cat.get_style("jed", workspace="topp")
         self.assertEqual("Fred", jed.sld_title)
 
@@ -606,8 +606,8 @@ class ModifyingTests(unittest.TestCase):
 
     def testLayerWorkspaceStyles(self):
         # upload new style, verify existence
-        self.cat.create_style("ned", open("fred.sld").read(), overwrite=True, workspace="topp")
-        self.cat.create_style("zed", open("ted.sld").read(), overwrite=True, workspace="topp")
+        self.cat.create_style("ned", open("test/fred.sld").read(), overwrite=True, workspace="topp")
+        self.cat.create_style("zed", open("test/ted.sld").read(), overwrite=True, workspace="topp")
         ned = self.cat.get_style("ned", workspace="topp")
         zed = self.cat.get_style("zed", workspace="topp")
         self.assert_(ned is not None)
@@ -631,7 +631,7 @@ class ModifyingTests(unittest.TestCase):
         ws = self.cat.get_workspace("acme")
         self.assertEqual("acme", ws.name)
 
-    def testWorkspaceDelete(self): 
+    def testWorkspaceDelete(self):
         self.cat.create_workspace("foo", "http://example.com/foo")
         ws = self.cat.get_workspace("foo")
         self.cat.delete(ws)
@@ -702,7 +702,7 @@ class ModifyingTests(unittest.TestCase):
         """
         # testing the mosaic creation
         name = 'cea_mosaic'
-        data = open('data/mosaic/cea.zip', 'rb')
+        data = open('test/data/mosaic/cea.zip', 'rb')
         self.cat.create_imagemosaic(name, data)
 
         # get the layer resource back
