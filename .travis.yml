@@ -23,7 +23,7 @@ before_script:
   - psql -U postgres -d db -c "create extension postgis"
   - psql -U postgres -c "alter user postgres with password 'password';"
   - java -Xmx512m -XX:MaxPermSize=256m -Dorg.eclipse.jetty.server.webapp.parentLoaderPriority=true -jar gs/jetty-runner-8.1.8.v20121106.jar --path /geoserver gs/geoserver.war > /dev/null 2>&1 &
-  - sleep 45
+  - sleep 90
 script: 
   - python setup.py test
 notifications:
