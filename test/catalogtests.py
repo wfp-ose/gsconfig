@@ -178,7 +178,12 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(tas.styles, [None, None, None, None], tas.styles)
 
     def testStyles(self):
-        self.assertEqual(20, len(self.cat.get_styles()))
+        # GeoServer 2.8 has 21 styles, wheras previous versions only had 20.
+        if re.search('2.8', self.cat.gsversion()):
+            count = 21
+        else:
+            count = 20
+        self.assertEqual(count, len(self.cat.get_styles()))
         self.assertEqual("population", self.cat.get_style("population").name)
         self.assertEqual("popshade.sld", self.cat.get_style("population").filename)
         self.assertEqual("population", self.cat.get_style("population").sld_name)
