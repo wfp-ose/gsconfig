@@ -11,9 +11,15 @@ The project is distributed under a `MIT License <LICENSE.txt>`_ .
 Installing
 ==========
 
-For users: ``pip install gsconfig`` 
+.. code-block:: shell
 
-For developers: ``git clone git@github.com:boundlessgeo/gsconfig.git && cd gsconfig && python setup.py develop``
+    pip install gsconfig
+
+For developers:
+
+.. code-block:: shell
+
+    git clone git@github.com:boundlessgeo/gsconfig.git && cd gsconfig && python setup.py develop
 (`virtualenv <http://virtualenv.org/>`_ to taste.)
 
 Getting Help
@@ -26,7 +32,7 @@ Please use the Github project at http://github.com/boundlessgeo/gsconfig for any
 Sample Layer Creation Code
 ==========================
 
-.. code-block::
+.. code-block:: python
 
     from geoserver.catalog import Catalog
     cat = Catalog("http://localhost:8080/geoserver/")
@@ -73,34 +79,40 @@ GEOSERVER_DATA_DIR
     Optional location of the data dir geoserver will be running with. If provided, `rsync`
     will be used to reset the data.
 
-Here are the commands that I use to reset before running the gsconfig tests::
+Here are the commands that I use to reset before running the gsconfig tests:
 
-   $ cd ~/geoserver/src/web/app/
-   $ PGUSER=postgres dropdb db 
-   $ PGUSER=postgres createdb db -T template_postgis
-   $ git clean -dxff -- ../../../data/release/
-   $ git checkout -f
-   $ MAVEN_OPTS="-XX:PermSize=128M -Xmx1024M" \
-   GEOSERVER_DATA_DIR=../../../data/release \
-   mvn jetty:run
+.. code-block:: shell
+
+    $ cd ~/geoserver/src/web/app/
+    $ PGUSER=postgres dropdb db
+    $ PGUSER=postgres createdb db -T template_postgis
+    $ git clean -dxff -- ../../../data/release/
+    $ git checkout -f
+    $ MAVEN_OPTS="-XX:PermSize=128M -Xmx1024M" \
+    GEOSERVER_DATA_DIR=../../../data/release \
+    mvn jetty:run
 
 At this point, GeoServer will be running foregrounded, but it will take a few seconds to actually begin listening for http requests.
 You can stop it with ``CTRL-C`` (but don't do that until you've run the tests!)
-You can run the gsconfig tests with the following command::
+You can run the gsconfig tests with the following command:
 
-  $ python setup.py test
+.. code-block:: shell
 
-Instead of restarting GeoServer after each run to reset the data, the following should allow re-running the tests::
+    $ python setup.py test
 
-   $ git clean -dxff -- ../../../data/release/
-   $ curl -XPOST --user admin:geoserver http://localhost:8080/geoserver/rest/reload
+Instead of restarting GeoServer after each run to reset the data, the following should allow re-running the tests:
+
+.. code-block:: shell
+
+    $ git clean -dxff -- ../../../data/release/
+    $ curl -XPOST --user admin:geoserver http://localhost:8080/geoserver/rest/reload
 
 More Examples - Updated for GeoServer 2.4+
 ==========================================
 
 Loading the GeoServer ``catalog`` using ``gsconfig`` is quite easy. The example below allows you to connect to GeoServer by specifying custom credentials.
 
-.. code-block::
+.. code-block:: python
 
     from geoserver.catalog import Catalog
     cat = Catalog("http://localhost:8080/geoserver/rest/")
@@ -109,7 +121,7 @@ Loading the GeoServer ``catalog`` using ``gsconfig`` is quite easy. The example 
 
 The code below allows you to create a FeatureType from a Shapefile
 
-.. code-block::
+.. code-block:: python
 
     geosolutions = cat.get_workspace("geosolutions")
     import geoserver.util
@@ -130,7 +142,7 @@ The code below allows you to create a FeatureType from a Shapefile
 
 This example shows how to easily update a ``layer`` property. The same approach may be used with every ``catalog`` resource
 
-.. code-block::
+.. code-block:: python
 
     ne_shaded = cat.get_layer("ne_shaded")
     ne_shaded.enabled=True
@@ -139,7 +151,7 @@ This example shows how to easily update a ``layer`` property. The same approach 
 
 Deleting a ``store`` from the ``catalog`` requires to purge all the associated ``layers`` first. This can be done by doing something like this:
 
-.. code-block::
+.. code-block:: python
 
     st = cat.get_store("ne_shaded")
     cat.delete(ne_shaded)
@@ -156,7 +168,7 @@ In order to create a new ImageMosaic layer, you can prepare a zip file containin
 in order to get details on the mosaic configuration. The package contains an already configured zip file with two granules.
 You need to update or remove the ``datastore.properties`` file before creating the mosaic otherwise you will get an exception.
 
-.. code-block::
+.. code-block:: python
 
     from geoserver.catalog import Catalog
     cat = Catalog("http://localhost:8180/geoserver/rest")
@@ -164,34 +176,34 @@ You need to update or remove the ``datastore.properties`` file before creating t
 
 By defualt the ``cat.create_imagemosaic`` tries to configure the layer too. If you want to create the store only, you can specify the following parameter
 
-.. code-block::
+.. code-block:: python
 
     cat.create_imagemosaic("NOAAWW3_NCOMultiGrid_WIND_test", "NOAAWW3_NCOMultiGrid_WIND_test.zip", "none")
 
 In order to retrieve from the catalog the ImageMosaic coverage store you can do this
 
-.. code-block::
+.. code-block:: python
 
     store = cat.get_store("NOAAWW3_NCOMultiGrid_WIND_test")
 
 It is possible to add more granules to the mosaic at runtime.
 With the following method you can add granules already present on the machine local path.
 
-.. code-block::
+.. code-block:: python
 
     cat.harvest_externalgranule("file://D:/Work/apache-tomcat-6.0.16/instances/data/data/MetOc/NOAAWW3/20131001/WIND/NOAAWW3_NCOMultiGrid__WIND_000_20131001T000000.tif", store)
 
 The method below allows to send granules remotely via POST to the ImageMosaic.
 The granules will be uploaded and stored on the ImageMosaic index folder.
 
-.. code-block::
+.. code-block:: python
 
     cat.harvest_uploadgranule("NOAAWW3_NCOMultiGrid__WIND_000_20131002T000000.zip", store)
 
 To delete an ImageMosaic store, you can follow the standard approach, by deleting the layers first.
 *ATTENTION*: at this time you need to manually cleanup the data dir from the mosaic granules and, in case you used a DB datastore, you must also drop the mosaic tables.
 
-.. code-block::
+.. code-block:: python
 
     layer = cat.get_layer("NOAAWW3_NCOMultiGrid_WIND_test")
     cat.delete(layer)
@@ -202,7 +214,7 @@ To delete an ImageMosaic store, you can follow the standard approach, by deletin
 The method below allows you the load and update the coverage metadata of the ImageMosaic.
 You need to do this for every coverage of the ImageMosaic of course.
 
-.. code-block::
+.. code-block:: python
 
     coverage = cat.get_resource_by_url("http://localhost:8180/geoserver/rest/workspaces/natocmre/coveragestores/NOAAWW3_NCOMultiGrid_WIND_test/coverages/NOAAWW3_NCOMultiGrid_WIND_test.xml")
     coverage.supported_formats = ['GEOTIFF']
@@ -211,7 +223,7 @@ You need to do this for every coverage of the ImageMosaic of course.
 By default the ImageMosaic layer has not the coverage dimensions configured. It is possible using the coverage metadata to update and manage the coverage dimensions.
 *ATTENTION*: notice that the ``presentation`` parameters accepts only one among the following values {'LIST', 'DISCRETE_INTERVAL', 'CONTINUOUS_INTERVAL'}
 
-.. code-block::
+.. code-block:: python
 
     from geoserver.support import DimensionInfo
     timeInfo = DimensionInfo("time", "true", "LIST", None, "ISO8601", None)
@@ -220,7 +232,7 @@ By default the ImageMosaic layer has not the coverage dimensions configured. It 
 
 One the ImageMosaic has been configures, it is possible to read the coverages along with their granule schema and granule info.
 
-.. code-block::
+.. code-block:: python
 
     from geoserver.catalog import Catalog
     cat = Catalog("http://localhost:8180/geoserver/rest")
@@ -231,7 +243,7 @@ One the ImageMosaic has been configures, it is possible to read the coverages al
 
 The granules details can be easily read by doing something like this:
 
-.. code-block::
+.. code-block:: python
 
     granules['crs']['properties']['name']
     granules['features']
@@ -241,7 +253,7 @@ The granules details can be easily read by doing something like this:
 
 When the mosaic grows up and starts having a huge set of granules, you may need to filter the granules query through a CQL filter on the coverage schema attributes.
 
-.. code-block::
+.. code-block:: python
 
     granules = cat.mosaic_granules(coverages['coverages']['coverage'][0]['name'], store, "time >= '2013-10-01T03:00:00.000Z'")
     granules = cat.mosaic_granules(coverages['coverages']['coverage'][0]['name'], store, "time >= '2013-10-01T03:00:00.000Z' AND run = 0")
