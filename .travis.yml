@@ -26,7 +26,6 @@ install:
   - wget http://ares.boundlessgeo.com/geoserver/${GS_VERSION}/geoserver-${GS_VERSION}-latest-war.zip
   - unzip geoserver-${GS_VERSION}-latest-war.zip
   - popd
-  - pip install -r requirements.txt
   - pip install .
   - pip install psycopg2
 before_script:

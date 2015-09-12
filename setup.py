@@ -17,7 +17,8 @@ setup(name = "gsconfig",
     url = "https://github.com/boundlessgeo/gsconfig",
     author = "David Winslow, Sebastian Benthall",
     author_email = "dwinslow@opengeo.org",
-    install_requires = ['httplib2>=0.7.4',
+    install_requires = [
+        'httplib2>=0.7.4',
         'gisdata==0.5.4'
     ],
     package_dir = {'':'src'},
