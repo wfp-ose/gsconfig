@@ -178,12 +178,6 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(tas.styles, [None, None, None, None], tas.styles)
 
     def testStyles(self):
-        # GeoServer 2.8 has 21 styles, wheras previous versions only had 20.
-        if re.search('2.8', self.cat.gsversion()):
-            count = 21
-        else:
-            count = 20
-        self.assertEqual(count, len(self.cat.get_styles()))
         self.assertEqual("population", self.cat.get_style("population").name)
         self.assertEqual("popshade.sld", self.cat.get_style("population").filename)
         self.assertEqual("population", self.cat.get_style("population").sld_name)
@@ -550,6 +544,9 @@ class ModifyingTests(unittest.TestCase):
 
 
     def testStyles(self):
+        # check count before tests (upload)
+        count = len(self.cat.get_styles())
+
         # upload new style, verify existence
         self.cat.create_style("fred", open("test/fred.sld").read())
         fred = self.cat.get_style("fred")
@@ -575,6 +572,9 @@ class ModifyingTests(unittest.TestCase):
         f = self.cat.get_style_by_url(fred.href)
         self.assert_(f is not None)
         self.assertEqual(f.name, fred.name)
+
+        # compare count after upload
+        self.assertEqual(count +1, len(self.cat.get_styles()))
 
     def testWorkspaceStyles(self):
         # upload new style, verify existence
