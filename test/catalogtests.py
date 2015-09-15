@@ -459,6 +459,15 @@ class ModifyingTests(unittest.TestCase):
         self.assertEqual(False, changed_layer.advertised)
         self.assertEqual(False, changed_layer.enabled)
 
+        # Testing projection and projection policy changes
+        changed_layer.projection = "EPSG:900913"
+        changed_layer.projection_policy = "REPROJECT_TO_DECLARED"
+        self.cat.save(changed_layer)
+        self.cat._cache.clear()
+        layer = self.cat.get_layer(changed_layer.name)
+        self.assertEqual(layer.resource.projection_policy, changed_layer.projection_policy)
+        self.assertEqual(layer.resource.projection, changed_layer.projection)
+
     def testFeatureTypeCreate(self):
         shapefile_plus_sidecars = shapefile_and_friends("test/data/states")
         expected = {

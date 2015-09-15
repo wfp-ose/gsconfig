@@ -259,10 +259,10 @@ class WmsLayer(ResourceInfo):
                 abstract = write_string("abstract"),
                 keywords = write_string_list("keywords"),
                 # nativeCRS
-                projection = write_string("srs"),
+                srs = write_string("srs"),
                 nativeBoundingBox = write_bbox("nativeBoundingBox"),
                 latLonBoundingBox = write_bbox("latLonBoundingBox"),
-                projection_policy = write_string("projectionPolicy"),
+                projectionPolicy = write_string("projectionPolicy"),
                 enabled = write_bool("enabled"),
                 advertised = write_bool("advertised"),
                 metadataLinks = write_metadata_link_list("metadataLinks")
