@@ -6,11 +6,19 @@ services:
 matrix:
   include:
     - python: "2.6"
+      env: GS_VERSION=2.4.x
+    - python: "2.6"
+      env: GS_VERSION=2.5.x
+    - python: "2.6"
       env: GS_VERSION=2.6.x
     - python: "2.6"
       env: GS_VERSION=2.7.x
     - python: "2.6"
       env: GS_VERSION=master
+    - python: "2.7"
+      env: GS_VERSION=2.4.x
+    - python: "2.7"
+      env: GS_VERSION=2.5.x
     - python: "2.7"
       env: GS_VERSION=2.6.x
     - python: "2.7"
