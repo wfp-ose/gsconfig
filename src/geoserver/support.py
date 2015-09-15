@@ -424,10 +424,7 @@ def md_dynamic_default_values_info(name, node):
             defaultValueExpression = defaultValueExpression.text if defaultValueExpression is not None else None
             
             configurations.append(DynamicDefaultValuesConfiguration(dimension, policy, defaultValueExpression))
-            
-    return DynamicDefaultValues(name, configurations)
-            configurations.append(DynamicDefaultValuesConfiguration(dimension, policy, defaultValueExpression))
-            
+
     return DynamicDefaultValues(name, configurations)
 
 class JDBCVirtualTableGeometry(object):
