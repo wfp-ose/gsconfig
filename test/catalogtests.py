@@ -178,6 +178,19 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads', 'tasmania_cities'], tas.layers)
         self.assertEqual(tas.styles, [None, None, None, None], tas.styles)
 
+        # Try to create a new Layer Group into the "topp" workspace
+        self.assert_(self.cat.get_workspace("topp") is not None)
+        tas2 = self.cat.create_layergroup("tasmania_reloaded", tas.layers, workspace = "topp")
+        self.cat.save(tas2)
+        self.assert_(self.cat.get_layergroup("tasmania_reloaded") is None)
+        self.assert_(self.cat.get_layergroup("tasmania_reloaded", "topp") is not None)
+        tas2 = self.cat.get_layergroup("tasmania_reloaded", "topp")
+        self.assert_("tasmania_reloaded", tas2.name)
+        self.assert_(isinstance(tas2, LayerGroup))
+        self.assertEqual(tas2.workspace, "topp", tas2.workspace)
+        self.assertEqual(tas2.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads', 'tasmania_cities'], tas2.layers)
+        self.assertEqual(tas2.styles, [None, None, None, None], tas2.styles)
+
     def testStyles(self):
         self.assertEqual("population", self.cat.get_style("population").name)
         self.assertEqual("popshade.sld", self.cat.get_style("population").filename)
