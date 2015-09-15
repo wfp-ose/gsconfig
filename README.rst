@@ -140,6 +140,25 @@ The code below allows you to create a FeatureType from a Shapefile
     # 'name' is required
     ft = cat.create_featurestore("test", shapefile_plus_sidecars, geosolutions)
 
+It is possible to create JDBC Virtual Layers too. The code below allow to create a new SQL View called ``my_jdbc_vt_test`` defined by a custom ``sql``.
+
+.. code-block:: python
+
+    from geoserver.catalog import Catalog
+    from geoserver.support import JDBCVirtualTable, JDBCVirtualTableGeometry, JDBCVirtualTableParam
+
+    cat = Catalog('http://localhost:8080/geoserver/rest/', 'admin', '****')
+    store = cat.get_store('postgis-geoserver')
+    geom = JDBCVirtualTableGeometry('newgeom','LineString','4326')
+    ft_name = 'my_jdbc_vt_test'
+    epsg_code = 'EPSG:4326'
+    sql = 'select ST_MakeLine(wkb_geometry ORDER BY waypoint) As newgeom, assetid, runtime from waypoints group by assetid,runtime'
+    keyColumn = None
+    parameters = None
+
+    jdbc_vt = JDBCVirtualTable(ft_name, sql, 'false', geom, keyColumn, parameters)
+    ft = cat.publish_featuretype(ft_name, store, epsg_code, jdbc_virtual_table=jdbc_vt)
+    
 This example shows how to easily update a ``layer`` property. The same approach may be used with every ``catalog`` resource
 
 .. code-block:: python
