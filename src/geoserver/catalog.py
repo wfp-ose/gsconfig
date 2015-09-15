@@ -17,7 +17,7 @@ from geoserver.store import coveragestore_from_index, datastore_from_index, \
     wmsstore_from_index, UnsavedDataStore, \
     UnsavedCoverageStore, UnsavedWmsStore
 from geoserver.style import Style
-from geoserver.support import prepare_upload_bundle, url, _decode_list, _decode_dict
+from geoserver.support import prepare_upload_bundle, url, _decode_list, _decode_dict, JDBCVirtualTable
 from geoserver.layergroup import LayerGroup, UnsavedLayerGroup
 from geoserver.workspace import workspace_from_index, Workspace
 from os import unlink
@@ -617,7 +617,7 @@ class Catalog(object):
         if headers.status != 200:
             raise FailedRequestError(response)
 
-    def publish_featuretype(self, name, store, native_crs, srs=None):
+    def publish_featuretype(self, name, store, native_crs, srs=None, jdbc_virtual_table=None):
         '''Publish a featuretype from data in an existing store'''
         # @todo native_srs doesn't seem to get detected, even when in the DB
         # metadata (at least for postgis in geometry_columns) and then there
@@ -636,7 +636,15 @@ class Catalog(object):
             "Content-type": "application/xml",
             "Accept": "application/xml"
         }
-        headers, response = self.http.request(store.resource_url, "POST", feature_type.message(), headers)
+        
+        resource_url=store.resource_url
+        if jdbc_virtual_table is not None:
+            feature_type.metadata=({'JDBC_VIRTUAL_TABLE':jdbc_virtual_table})
+            params = dict()
+            resource_url=url(self.service_url,
+                ["workspaces", store.workspace.name, "datastores", store.name, "featuretypes.json"], params)
+        
+        headers, response = self.http.request(resource_url, "POST", feature_type.message(), headers)
         feature_type.fetch()
         return feature_type
 
