@@ -19,8 +19,9 @@ For developers:
 
 .. code-block:: shell
 
-    git clone git@github.com:boundlessgeo/gsconfig.git && cd gsconfig && python setup.py develop
-(`virtualenv <http://virtualenv.org/>`_ to taste.)
+    git clone git@github.com:boundlessgeo/gsconfig.git
+    cd gsconfig
+    python setup.py develop
 
 Getting Help
 ============
@@ -36,7 +37,7 @@ Sample Layer Creation Code
 
     from geoserver.catalog import Catalog
     cat = Catalog("http://localhost:8080/geoserver/")
-    topp = self.cat.get_workspace("topp")
+    topp = cat.get_workspace("topp")
     shapefile_plus_sidecars = shapefile_and_friends("states")
     # shapefile_and_friends should look on the filesystem to find a shapefile
     # and related files based on the base path passed in
@@ -51,7 +52,7 @@ Sample Layer Creation Code
     # 'data' is required (there may be a 'schema' alternative later, for creating empty featuretypes)
     # 'workspace' is optional (GeoServer's default workspace is used by... default)
     # 'name' is required
-    ft = self.cat.create_featuretype(name, workspace=topp, data=shapefile_plus_sidecars)
+    ft = cat.create_featuretype(name, workspace=topp, data=shapefile_plus_sidecars)
 
 Running Tests
 =============
@@ -115,9 +116,7 @@ Loading the GeoServer ``catalog`` using ``gsconfig`` is quite easy. The example 
 .. code-block:: python
 
     from geoserver.catalog import Catalog
-    cat = Catalog("http://localhost:8080/geoserver/rest/")
-    cat.username = "admin"
-    cat.password = "****"
+    cat = Catalog("http://localhost:8080/geoserver/rest/", "admin", "geoserver")
 
 The code below allows you to create a FeatureType from a Shapefile
 
