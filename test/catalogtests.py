@@ -331,7 +331,7 @@ class ModifyingTests(unittest.TestCase):
     def testVirtualTables(self):
         ds = self.cat.create_datastore("gsconfig_import_test2")
         ds.connection_parameters.update(**DBPARAMS)
-    #     ds.data_url = "file:test/data/mytiff.tiff"
+        self.cat.save(ds)
         ds = self.cat.get_store("gsconfig_import_test2")
         self.cat.add_data_to_store(ds, "import2", {
             'shp': 'test/data/states.shp',
