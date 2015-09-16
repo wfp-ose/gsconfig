@@ -79,6 +79,10 @@ GEOSERVER_HOME
 GEOSERVER_DATA_DIR
     Optional location of the data dir geoserver will be running with. If provided, `rsync`
     will be used to reset the data.
+GS_VERSION
+    Optional environment variable allowing the catalog test cases to automatically download
+    and start a vanilla GeoServer WAR form the web.
+    Be sure that there are no running services on HTTP port 8080.
 
 Here are the commands that I use to reset before running the gsconfig tests:
 

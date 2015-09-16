@@ -1,4 +1,5 @@
-import os
+import os, subprocess, atexit, signal, tempfile
+import time
 import re
 import unittest
 import gisdata
@@ -36,6 +37,41 @@ if GEOSERVER_HOME:
         os.system('git clean -dxf -- %s' % data)
     os.system('curl -XPOST --user admin:geoserver http://localhost:8080/geoserver/rest/reload')
 
+# set GS_VERSION to None in order to skip the GeoServer setup
+global child_pid
+GS_BASE_DIR = tempfile.gettempdir()
+# use "master" in order to test against the latest GeoServer version
+GS_VERSION = os.getenv('GS_VERSION') if os.getenv('GS_VERSION') else None
+if GS_VERSION:
+    subprocess.Popen(["rm", "-rf", GS_BASE_DIR + "/gs"]).communicate()
+    subprocess.Popen(["mkdir", GS_BASE_DIR + "/gs"]).communicate()
+    subprocess.Popen(["wget",
+                      "http://repo2.maven.org/maven2/org/mortbay/jetty/jetty-runner/8.1.8.v20121106/jetty-runner-8.1.8.v20121106.jar",
+                      "-P", GS_BASE_DIR + "/gs"]).communicate()
+    subprocess.Popen(["wget",
+                      "http://ares.boundlessgeo.com/geoserver/" + GS_VERSION +"/geoserver-" + GS_VERSION + "-latest-war.zip",
+                      "-P", GS_BASE_DIR + "/gs"]).communicate()
+    subprocess.Popen(["unzip", "-o", "-d", GS_BASE_DIR + "/gs",
+                      GS_BASE_DIR + "/gs/geoserver-" + GS_VERSION + "-latest-war.zip"]).communicate()
+    FNULL = open(os.devnull, 'w')
+    proc = subprocess.Popen(["java", "-Xmx512m", "-XX:MaxPermSize=256m",
+                             "-Dorg.eclipse.jetty.server.webapp.parentLoaderPriority=true",
+                             "-jar", GS_BASE_DIR + "/gs/jetty-runner-8.1.8.v20121106.jar",
+                             "--path", "/geoserver", GS_BASE_DIR + "/gs/geoserver.war"],
+                             stdout=FNULL, stderr=subprocess.STDOUT)
+    child_pid = proc.pid
+    print "Sleep (90)..."
+    time.sleep(90)
+
+def kill_child():
+    if child_pid is None:
+        pass
+    else:
+        subprocess.Popen(["rm", "-Rf", GS_BASE_DIR + "/gs"]).communicate()
+        print "KILLING PROCESS: " + str(child_pid)
+        os.kill(child_pid, signal.SIGTERM)
+
+atexit.register(kill_child)
 
 def drop_table(table):
     def outer(func):
@@ -236,6 +272,7 @@ class CatalogTests(unittest.TestCase):
 
 
 class ModifyingTests(unittest.TestCase):
+
     def setUp(self):
         self.cat = Catalog("http://localhost:8080/geoserver/rest")
 
