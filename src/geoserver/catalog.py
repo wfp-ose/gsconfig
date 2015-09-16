@@ -376,12 +376,15 @@ class Catalog(object):
         upload_url = url(self.service_url, 
             ["workspaces", workspace, "datastores", store, "file.shp"], params) 
 
-        with open(bundle, "rb") as f:
-            data = f.read()
-            headers, response = self.http.request(upload_url, "PUT", data, headers)
-            self._cache.clear()
-            if headers.status != 201:
-                raise UploadError(response)
+        try:
+            with open(bundle, "rb") as f:
+                data = f.read()
+                headers, response = self.http.request(upload_url, "PUT", data, headers)
+                self._cache.clear()
+                if headers.status != 201:
+                    raise UploadError(response)
+        finally:
+            unlink(bundle)
 
     def create_featurestore(self, name, data, workspace=None, overwrite=False, charset=None):
         if not overwrite:
@@ -468,6 +471,12 @@ class Catalog(object):
                 message.close()
 
     def create_coveragestore(self, name, data, workspace=None, overwrite=False):
+        self._create_coveragestore(name, data, workspace, overwrite)
+
+    def create_coveragestore_external_geotiff(self, name, data, workspace=None, overwrite=False):
+        self._create_coveragestore(name, data, workspace=workspace, overwrite=overwrite, external=True)
+
+    def _create_coveragestore(self, name, data, workspace=None, overwrite=False, external=False):
         if not overwrite:
             try:
                 store = self.get_store(name, workspace)
@@ -481,29 +490,36 @@ class Catalog(object):
 
         if workspace is None:
             workspace = self.get_default_workspace()
-        headers = {
-            "Content-type": "image/tiff",
-            "Accept": "application/xml"
-        }
 
         archive = None
         ext = "geotiff"
+        contet_type = "image/tiff" if not external else "text/plain"
+        store_type = "file." if not external else "external."
 
-        if isinstance(data, dict):
-            archive = prepare_upload_bundle(name, data)
-            message = open(archive, 'rb')
-            if "tfw" in data:
-                # If application/archive was used, server crashes with a 500 error
-                # read in many sites that application/zip will do the trick. Successfully tested
-                headers['Content-type'] = 'application/zip'
-                ext = "worldimage"
-        elif isinstance(data, basestring):
-            message = open(data, 'rb')
-        else:
-            message = data
+        headers = {
+            "Content-type": contet_type,
+            "Accept": "application/xml"
+        }
+
+        message = data
+        if not external:
+            if isinstance(data, dict):
+                archive = prepare_upload_bundle(name, data)
+                message = open(archive, 'rb')
+                if "tfw" in data:
+                    # If application/archive was used, server crashes with a 500 error
+                    # read in many sites that application/zip will do the trick. Successfully tested
+                    headers['Content-type'] = 'application/zip'
+                    ext = "worldimage"
+            elif isinstance(data, basestring):
+                message = open(data, 'rb')
+            else:
+                message = data
+
 
         cs_url = url(self.service_url,
-            ["workspaces", workspace.name, "coveragestores", name, "file." + ext])
+            ["workspaces", workspace.name, "coveragestores", name, store_type + ext],
+            { "configure" : "first", "coverageName" : name})
 
         try:
             headers, response = self.http.request(cs_url, "PUT", message, headers)
