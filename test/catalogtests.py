@@ -622,6 +622,11 @@ class ModifyingTests(unittest.TestCase):
         # compare count after upload
         self.assertEqual(count +1, len(self.cat.get_styles()))
 
+        # attempt creating a new style without "title"
+        self.cat.create_style("notitle", open("test/notitle.sld").read())
+        notitle = self.cat.get_style("notitle")
+        self.assertEqual(None, notitle.sld_title)
+
     def testWorkspaceStyles(self):
         # upload new style, verify existence
         self.cat.create_style("jed", open("test/fred.sld").read(), workspace="topp")
