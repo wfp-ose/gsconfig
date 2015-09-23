@@ -563,15 +563,14 @@ class ModifyingTests(unittest.TestCase):
         }
 
         sf = self.cat.get_workspace("sf")
-        # TODO: Uploading WorldImage file no longer works???
-        # ft = self.cat.create_coveragestore("Pk50095", tiffdata, sf)
+        ft = self.cat.create_coveragestore("Pk50095", tiffdata, sf)
 
-        # self.assert_(self.cat.get_resource("Pk50095", workspace=sf) is not None)
+        self.assert_(self.cat.get_resource("Pk50095", workspace=sf) is not None)
 
-        # self.assertRaises(
-        #         ConflictingDataError,
-        #         lambda: self.cat.create_coveragestore("Pk50095", tiffdata, sf)
-        # )
+        self.assertRaises(
+                ConflictingDataError,
+                lambda: self.cat.create_coveragestore("Pk50095", tiffdata, sf)
+        )
 
         self.assertRaises(
             UploadError,
@@ -588,6 +587,8 @@ class ModifyingTests(unittest.TestCase):
             UploadError,
             lambda: self.cat.create_coveragestore("states_raster", bogus_tiff)
         )
+
+        ft_ext = self.cat.create_coveragestore_external_geotiff("Pk50095_ext", 'file:test/data/Pk50095.tif', sf)
 
     def testLayerSave(self):
         # test saving round trip
