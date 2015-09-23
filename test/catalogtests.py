@@ -142,6 +142,35 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual("sfdem", self.cat.get_resource("sfdem", workspace=sf).name)
         self.assertEqual("sfdem", self.cat.get_resource("sfdem").name)
 
+    def testResourcesUpdate(self):
+        res_dest = self.cat.get_resources()
+        count = 0
+
+        for rd in res_dest:
+            # only wms layers
+            if rd.resource_type != "wmsLayer": continue
+            # looking for same name
+            ro = self.cat.get_resource(rd.name)
+
+            if ro is not None:
+                rd.title  = ro.title
+                rd.abstract  = ro.abstract
+                rd.keywords  = ro.keywords
+                rd.projection  = ro.projection
+                rd.native_bbox  = ro.native_bbox
+                rd.latlon_bbox  = ro.latlon_bbox
+                rd.projection_policy  = ro.projection_policy
+                rd.enabled  = ro.enabled
+                rd.advertised  = ro.advertised
+                rd.metadata_links = ro.metadata_links or None
+
+                self.cat.save(rd)
+                self.cat.reload()
+
+                # print "Updated layer: " + rd.name
+                count += 1
+
+        # print "Total updated layers: " + str(count)
 
     def testLayers(self):
         expected = set(["Arc_Sample", "Pk50095", "Img_Sample", "mosaic", "sfdem",
