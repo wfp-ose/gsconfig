@@ -74,7 +74,11 @@ class Style(ResourceInfo):
             user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
         
         if user_style:
-            title_node = user_style.find("{http://www.opengis.net/sld}Title")
+            try:
+                # it is not mandatory
+                title_node = user_style.find("{http://www.opengis.net/sld}Title")
+            except:
+                title_node = None
         
         return title_node.text if title_node is not None else None
 
@@ -85,7 +89,11 @@ class Style(ResourceInfo):
             user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
         
         if user_style:
-            name_node = user_style.find("{http://www.opengis.net/sld}Name")
+            try:
+                # it is not mandatory
+                name_node = user_style.find("{http://www.opengis.net/sld}Name")
+            except:
+                name_node = None
             
         return name_node.text if name_node is not None else None
 
