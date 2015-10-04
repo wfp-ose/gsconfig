@@ -52,7 +52,7 @@ Sample Layer Creation Code
     # 'data' is required (there may be a 'schema' alternative later, for creating empty featuretypes)
     # 'workspace' is optional (GeoServer's default workspace is used by... default)
     # 'name' is required
-    ft = cat.create_featuretype(name, workspace=topp, data=shapefile_plus_sidecars)
+    ft = cat.create_featurestore(name, workspace=topp, data=shapefile_plus_sidecars)
 
 Running Tests
 =============
