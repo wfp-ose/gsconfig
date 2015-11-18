@@ -18,6 +18,7 @@ class Style(ResourceInfo):
     def href(self):
         return self._build_href('.xml')
 
+    @property
     def body_href(self):
         return self._build_href('.sld')
 
